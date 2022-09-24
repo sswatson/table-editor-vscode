@@ -1,0 +1,30 @@
+.rg-columnHeader-cell {
+  background-color: rgb(40, 40, 40);
+  background-opacity: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.rg-columnHeader-celleditor input {
+  text-align: center;
+  background-color: #111;
+}
+
+.rg-celleditor {
+  background-color: #222;
+}
+
+.rg-celleditor input {
+  text-align: center;
+}
+
+.reactgrid-content .rg-context-menu {
+  background-color: #222;
+  color: #EEE;
+}
+
+.reactgrid-content .rg-context-menu .rg-context-menu-option:hover {
+  background-color: #444;
+  color: #FFF;
+}
