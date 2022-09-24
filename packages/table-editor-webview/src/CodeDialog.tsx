@@ -38,7 +38,7 @@ const CodeDialog = (props: CodeDialogProps) => {
   return (
     <>
       {codeRequested}
-      <div className="text-xs">
+      <div className="text-[0.65rem]">
         Variables:
         <ul className="ml-4 mt-1">
           <li><code>cell</code>: the value in the current cell</li>
