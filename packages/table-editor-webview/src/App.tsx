@@ -378,7 +378,6 @@ function App() {
   }
 
   function tableDataIsValid(columns: Column[], records: Record[]) {
-    console.log(columns, records);
     return columns.length > 0 && records.length > 0;
   }
 
@@ -696,10 +695,6 @@ function App() {
           )),
         ),
       );
-      console.log(Math.ceil(textWidthMeasurer.measure(
-        node.textContent || "",
-        window.getComputedStyle(node).font,
-      )))
     });
     const newColumns = columns.map((col, i) => ({
       ...col,
