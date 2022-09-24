@@ -6,7 +6,7 @@ This extension provides support for editing CSV, Markdown, HTML or JSON tables i
 
 ## Workflow
 
-In any text file, select a block of text representing a CSV, Markdown, HTML, or JSON table and invoke the appropriate "Open in Table Editor" command using the command palette (for example, "Open CSV in Table Editor" if the format is CSV). 
+In any text file, select a block of text representing a CSV, Markdown, HTML, or JSON table and invoke the "Open in Table Editor" command using the command palette. If no text is selected, the full contents of the editor will be used instead. The format will be inferred by the extension, but if you can also use a more specific command like "Open CSV in Table Editor".
 
 The table will be displayed as a spreadsheet in a new tab. You can use the spreadsheet tool to add or delete rows or columns, change column order, edit the contents of cells, and more.
 

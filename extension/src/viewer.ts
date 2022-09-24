@@ -1,43 +1,40 @@
 import * as vscode from "vscode";
 import * as path from "path";
 
-export type TableEditorFormat = 'csv' | 'html' | 'md' | 'json';
+export type TableEditorFormat = 'csv' | 'md' | 'html' | 'json' | 'unknown';
+
+function getSelection(editor: vscode.TextEditor | undefined) {
+  if (!editor) {
+    return {
+      range: new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 0)),
+      selection: "",
+    };
+  }
+  const { active, anchor } = editor.selection;
+  const range = new vscode.Range(active, anchor);
+  const selection = editor.document.getText(range);
+  return {
+    range,
+    selection,
+  };
+}
+
+function getSelectionOrAll(editor: vscode.TextEditor | undefined) {
+  if (!editor) {
+    return "";
+  };
+  const { active, anchor } = editor.selection;
+  if (active.line === anchor.line && active.character === anchor.character) {
+    return editor.document.getText();
+  } else {
+    return getSelection(editor).selection;
+  }
+}
 
 export function openViewer(
   context: vscode.ExtensionContext,
   format: TableEditorFormat | "",
 ) {
-
-  function getSelection(editor: vscode.TextEditor | undefined) {
-    if (!editor) {
-      return {
-        range: new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 0)),
-        selection: "",
-      };
-    }
-    const { active, anchor } = editor.selection;
-    const range = new vscode.Range(active, anchor);
-    const selection = editor.document.getText(range);
-    return {
-      range,
-      selection,
-    };
-  }
-
-  function getSelectionOrAll(editor: vscode.TextEditor | undefined) {
-    if (!editor) {
-      return {
-        range: new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 0)),
-        selection: "",
-      };
-    }
-    const { active, anchor } = editor.selection;
-    if (active === anchor) {
-      return editor.document.getText();
-    } else {
-      return getSelection(editor).selection;
-    }
-  }
 
   let panel = ReactPanel.createOrShow(context.extensionPath);
 

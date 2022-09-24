@@ -56,7 +56,7 @@ const CodeDialog = (props: CodeDialogProps) => {
             setCodeRequested("");
           }
         }}
-        className="w-3/4 p-2 font-mono text-[0.7rem] bg-transparent text-gray-200 border border-gray-400 rounded resize-none h-[125px]"
+        className="w-3/4 p-2 font-mono text-[0.7rem] bg-transparent text-gray-200 border border-gray-400 rounded resize-none h-[80px]"
         value={code}
         onChange={(event) => setCode(event.target.value)}
       />

@@ -12,15 +12,26 @@
 		"Other"
 	],
 	"activationEvents": [
+		"onCommand:table-editor.open",
+		"onCommand:table-editor.openBlank",
 		"onCommand:table-editor.openCSV",
-		"onCommand:table-editor.openHTML",
 		"onCommand:table-editor.openMD",
-		"onCommand:table-editor.openJSON",
-		"onCommand:table-editor.openBlank"
+		"onCommand:table-editor.openHTML",
+		"onCommand:table-editor.openJSON"
 	],
 	"main": "./out/extension.js",
 	"contributes": {
+		"keybindings": [{
+				"command": "table-editor.open",
+				"key": "Ctrl+Shift+T",
+				"mac": "Cmd+Shift+T",
+				"when": "editorTextFocus"
+		}],
 		"commands": [
+			{
+				"command": "table-editor.open",
+				"title": "Open in Table Editor"
+			},
 			{
 				"command": "table-editor.openBlank",
 				"title": "Open New Table Editor"

@@ -7,8 +7,20 @@ import type { TableEditorFormat } from "./viewer";
 export function activate(context: vscode.ExtensionContext) {
 
 	let panel: vscode.WebviewPanel;
-	
-	const formats: TableEditorFormat[] = ['csv', 'html', 'md', 'json'];
+
+	context.subscriptions.push(
+		vscode.commands.registerCommand("table-editor.open", () => {
+			panel = openViewer(context, "unknown");
+		})
+	);
+
+	context.subscriptions.push(
+		vscode.commands.registerCommand("table-editor.openBlank", () => {
+			panel = openViewer(context, "");
+		})
+	);
+
+	const formats: TableEditorFormat[] = ['csv', 'md', 'html', 'json'];
 
 	for (let format of formats) {
 		context.subscriptions.push(
@@ -17,12 +29,6 @@ export function activate(context: vscode.ExtensionContext) {
 			})
 		);
 	}
-
-	context.subscriptions.push(
-		vscode.commands.registerCommand("table-editor.openBlank", () => {
-			panel = openViewer(context, "");
-		})
-	);
 
 }
 

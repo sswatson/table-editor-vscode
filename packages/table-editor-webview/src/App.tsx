@@ -381,11 +381,19 @@ function App() {
     return columns.length > 0 && records.length > 0;
   }
 
+  const importUnknown = (data: string) => {
+    for (let importFormat of [importJSON, importHTML, importMD, importCSV]) {
+      const result = importFormat(data);
+      if (result !== false) return;
+    }
+    setWarning(true);
+  }
+
   const importCSV = (csv: string) => {
     try {
-      const { data, meta } = Papa.parse(csv, { header: true });
+      const { data, meta } = Papa.parse(csv.trim(), { header: true });
       if (!meta.fields) return;
-      const newColumns = makeColumns(meta.fields)
+      let newColumns = makeColumns(meta.fields)
       const newRecords = (data as Record[]).map(row => {
         const newRecord: Record = {};
         for (let field of meta.fields ?? []) {
@@ -397,25 +405,30 @@ function App() {
         do: { columns: newColumns, records: newRecords },
         undo: { columns, records },
       });
+      newColumns = autofitColumns(newColumns, newRecords, false);
       setTableData(newColumns, newRecords);
-      setTimeout(() => autofitColumns(newColumns), 50);
+      // setTimeout(() => autofitColumns(newColumns, newRecords), AUTOFIT_WAIT);
+      return true;
     } catch (e) {
       setWarning(true);
+      return false;
     }
   }
 
   const importMD = (md: string) => {
     try {
       const { headers, records: newRecords } = parseMD(md.trim());
-      const newColumns = makeColumns(headers as string[]);
+      let newColumns = makeColumns(headers as string[]);
+      newColumns = autofitColumns(newColumns, newRecords, false);
       setTableData(newColumns, newRecords);
-      setTimeout(() => autofitColumns(newColumns), 50);
       addHistoryItem({
         do: { columns: newColumns, records: newRecords },
         undo: { columns, records },
       });
+      return true;
     } catch (err) {
       setWarning(true);
+      return false;
     }
   };
 
@@ -423,32 +436,36 @@ function App() {
     try {
       const json = HTMLTableToJSON.parse(html.trim());
       const headers = [...Object.keys(json.results[0][0])];
-      const newColumns = makeColumns(headers);
+      let newColumns = makeColumns(headers);
       const newRecords = json.results[0] as Record[];
+      newColumns = autofitColumns(newColumns, newRecords, false);
       setTableData(newColumns, newRecords);
-      setTimeout(() => autofitColumns(newColumns), 50);
       addHistoryItem({
         do: { columns: newColumns, records: newRecords },
         undo: { columns, records },
       });
+      return true;
     } catch (err) {
       setWarning(true);
+      return false;
     }
   };
 
   const importJSON = (json: string) => {
     try {
       const newRecords = JSON.parse(json.trim());
-      const headers = [...Object.keys(rows[0])];
-      const newColumns = makeColumns(headers as string[]);
+      const headers = [...Object.keys(newRecords[0])];
+      let newColumns = makeColumns(headers as string[]);
+      newColumns = autofitColumns(newColumns, newRecords, false);
       setTableData(newColumns, newRecords);
-      setTimeout(() => autofitColumns(newColumns), 50);
       addHistoryItem({
         do: { columns: newColumns, records: newRecords },
         undo: { columns, records },
       });
+      return true;
     } catch (err) {
       setWarning(true);
+      return false;
     }
   };
 
@@ -495,6 +512,8 @@ function App() {
           importMD(content);
         } else if (data.format === "json") {
           importJSON(content);
+        } else if (data.format === "unknown") {
+          importUnknown(content);
         } else if (data.format === "") {
           importCSV(STARTER_CSV);
         }
@@ -681,30 +700,39 @@ function App() {
     });
   }
 
-  const autofitColumns = (columns: Column[]) => {
+  const autofitColumns = (columns: Column[], records: Record[], takeAction: boolean) => {
     const colWidths = new Map();
-    [...document.querySelectorAll('.rg-cell')].forEach(node => {
-      const colIdx = parseInt(node.getAttribute("data-cell-colidx") || "-1");
-      colWidths.set(
-        colIdx,
-        Math.max(
-          colWidths.get(colIdx) || 0,
-          Math.ceil(textWidthMeasurer.measure(
-            node.textContent || "",
-            window.getComputedStyle(node).font,
-          )),
-        ),
-      );
-    });
+    const headerRow = Object.fromEntries(
+      columns
+        .map(col => col.columnId === "_row_number" ? "#" : col.columnId)
+        .map(x => [x, x])
+    );
+    for (let record of [headerRow, ...records]) {
+      for (let key in record) {
+        colWidths.set(
+          key,
+          Math.max(
+            colWidths.get(key) || 0,
+            Math.ceil(textWidthMeasurer.measure(
+              record[key].toString(),
+              '13px / 19.5px -apple-system, "system-ui", sans-serif'
+            )),
+          ),
+        );
+      }
+    }
     const newColumns = columns.map((col, i) => ({
       ...col,
-      width: (colWidths.get(i) + 12) || col.width,
+      width: (colWidths.get(col.columnId) + 12) || col.width,
     }));
-    addHistoryItem({
-      do: () => setColumns(newColumns),
-      undo: () => setColumns(columns),
-    });
-    setColumns(newColumns);
+    if (takeAction) {
+      addHistoryItem({
+        do: () => setColumns(newColumns),
+        undo: () => setColumns(columns),
+      });
+      setColumns(newColumns);
+    }
+    return newColumns;
   }
 
   const simpleHandleContextMenu = (
@@ -738,7 +766,7 @@ function App() {
       {
         id: "autofitColumns",
         label: "Autofit Columns",
-        handler: () => autofitColumns(columns),
+        handler: () => autofitColumns(columns, records, true),
       },
       ...menuOptions,
     ];
