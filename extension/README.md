@@ -2,7 +2,7 @@
 
 This extension provides support for editing CSV, Markdown, HTML or JSON tables in a spreadsheet interface.
 
-<img width="400" src="assets/demo.png">
+<img width="550" src="assets/demo.png">
 
 ## Workflow
 
@@ -24,7 +24,7 @@ To autosize the column widths to the cell contents, right-click on any cell and 
 
 ### Column transformations
 
-<img width="400" src="assets/demo-transform.png">
+<img width="550" src="assets/demo-transform.png">
 
 The "Transform Column" feature in the column menu allows you to write code to transform the contents of a column. For example, to put quotation marks around the contents of each cell, you can submit this code:
 

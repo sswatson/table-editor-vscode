@@ -3,7 +3,7 @@
 
 This extension provides support for editing CSV files in a spreadsheet-like interface.
 
-<img width="400" src="extension/assets/demo.png">
+<img width="550" src="extension/assets/demo.png">
 
 ## Development
 
