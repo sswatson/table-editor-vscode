@@ -405,9 +405,8 @@ function App() {
         do: { columns: newColumns, records: newRecords },
         undo: { columns, records },
       });
-      newColumns = autofitColumns(newColumns, newRecords, false);
+      newColumns = autofitColumns(newColumns, newRecords);
       setTableData(newColumns, newRecords);
-      // setTimeout(() => autofitColumns(newColumns, newRecords), AUTOFIT_WAIT);
       return true;
     } catch (e) {
       setWarning(true);
@@ -419,7 +418,7 @@ function App() {
     try {
       const { headers, records: newRecords } = parseMD(md.trim());
       let newColumns = makeColumns(headers as string[]);
-      newColumns = autofitColumns(newColumns, newRecords, false);
+      newColumns = autofitColumns(newColumns, newRecords);
       setTableData(newColumns, newRecords);
       addHistoryItem({
         do: { columns: newColumns, records: newRecords },
@@ -438,7 +437,7 @@ function App() {
       const headers = [...Object.keys(json.results[0][0])];
       let newColumns = makeColumns(headers);
       const newRecords = json.results[0] as Record[];
-      newColumns = autofitColumns(newColumns, newRecords, false);
+      newColumns = autofitColumns(newColumns, newRecords);
       setTableData(newColumns, newRecords);
       addHistoryItem({
         do: { columns: newColumns, records: newRecords },
@@ -456,7 +455,7 @@ function App() {
       const newRecords = JSON.parse(json.trim());
       const headers = [...Object.keys(newRecords[0])];
       let newColumns = makeColumns(headers as string[]);
-      newColumns = autofitColumns(newColumns, newRecords, false);
+      newColumns = autofitColumns(newColumns, newRecords);
       setTableData(newColumns, newRecords);
       addHistoryItem({
         do: { columns: newColumns, records: newRecords },
@@ -700,7 +699,7 @@ function App() {
     });
   }
 
-  const autofitColumns = (columns: Column[], records: Record[], takeAction: boolean) => {
+  const autofitColumns = (columns: Column[], records: Record[]) => {
     const colWidths = new Map();
     const headerRow = Object.fromEntries(
       columns
@@ -725,14 +724,33 @@ function App() {
       ...col,
       width: (colWidths.get(col.columnId) + 12) || col.width,
     }));
-    if (takeAction) {
-      addHistoryItem({
-        do: () => setColumns(newColumns),
-        undo: () => setColumns(columns),
-      });
-      setColumns(newColumns);
-    }
     return newColumns;
+  }
+
+  const autofit = (columns: Column[]) => {
+    const colWidths = new Map();
+    [...document.querySelectorAll('.rg-cell')].forEach(node => {
+      const colIdx = parseInt(node.getAttribute("data-cell-colidx") || "-1");
+      colWidths.set(
+        colIdx,
+        Math.max(
+          colWidths.get(colIdx) || 0,
+          Math.ceil(textWidthMeasurer.measure(
+            node.textContent || "",
+            window.getComputedStyle(node).font,
+          )),
+        ),
+      );
+    });
+    const newColumns = columns.map((col, i) => ({
+      ...col,
+      width: (colWidths.get(i) + 12) || col.width,
+    }));
+    addHistoryItem({
+      do: () => setColumns(newColumns),
+      undo: () => setColumns(columns),
+    });
+    setColumns(newColumns);
   }
 
   const simpleHandleContextMenu = (
@@ -766,7 +784,7 @@ function App() {
       {
         id: "autofitColumns",
         label: "Autofit Columns",
-        handler: () => autofitColumns(columns, records, true),
+        handler: () => autofit(columns),
       },
       ...menuOptions,
     ];
