@@ -565,7 +565,7 @@ function App() {
     const md = markdownTable([
       columns.slice(1).map(c => c.columnId.toString()),
       ...records.map(record => {
-      return [...Object.values(record)].slice(1).map(x => x.toString());
+      return [...Object.values(record)].map(x => x.toString());
       })],
       {
         align: "",        
@@ -589,7 +589,7 @@ function App() {
   <tbody>
     ${records.map(record => {
       return `<tr>
-        ${Object.values(record).slice(1).map(x => `<td>${x}</td>      `).join("")}
+        ${[...Object.values(record)].map(x => `<td>${x}</td>      `).join("")}
       </tr>`;
     }).join("")}
   </tbody>
