@@ -583,15 +583,20 @@ function App() {
     const html = `<table>
   <thead>
     <tr>
-      ${columns.slice(1).map(c => `<th>${c.columnId}</th>      `).join("\n")}
+      ${columns
+          .slice(1)
+          .map(c => `<th>${c.columnId}</th>`)
+          .join("\n      ")}
     </tr>
   </thead>
   <tbody>
     ${records.map(record => {
       return `<tr>
-        ${[...Object.values(record)].map(x => `<td>${x}</td>      `).join("\n")}
-      </tr>`;
-    }).join("")}
+      ${[...Object.values(record)]
+          .map(x => `<td>${x}</td>`)
+          .join("\n      ")}
+    </tr>`;
+    }).join("\n    ")}
   </tbody>
 </table>`;
     exportContent(html);
