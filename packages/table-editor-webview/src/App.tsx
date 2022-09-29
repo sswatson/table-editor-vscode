@@ -583,13 +583,13 @@ function App() {
     const html = `<table>
   <thead>
     <tr>
-      ${columns.slice(1).map(c => `<th>${c.columnId}</th>\n      `).join("")}
+      ${columns.slice(1).map(c => `<th>${c.columnId}</th>      `).join("\n")}
     </tr>
   </thead>
   <tbody>
     ${records.map(record => {
       return `<tr>
-        ${[...Object.values(record)].map(x => `<td>${x}</td>      `).join("")}
+        ${[...Object.values(record)].map(x => `<td>${x}</td>      `).join("\n")}
       </tr>`;
     }).join("")}
   </tbody>
