@@ -19,13 +19,70 @@ function getSelection(editor: vscode.TextEditor | undefined) {
   };
 }
 
+function findBlock(editor: vscode.TextEditor) {
+  const { active } = editor.selection;
+  let start = active.line, end = active.line;
+  // search forward to find a nonempty line
+  while (start < editor.document.lineCount - 1 
+          && editor.document.lineAt(start).isEmptyOrWhitespace) {
+    start++;
+    end++;
+  }
+  if (start === editor.document.lineCount - 1) {
+    start = active.line;
+    end = active.line;
+    while (start > 0
+          && editor.document.lineAt(start).isEmptyOrWhitespace) {
+      start--;
+      end--;
+    }
+  }
+  // if document is all whitespace:
+  if (start === 0) {
+    return null;
+  }
+  // then search backward to find the first nonempty line before that
+  while (start > 0) {
+    const line = editor.document.lineAt(start - 1);
+    if (line.isEmptyOrWhitespace) {
+      break;
+    }
+    start--;
+  }
+  // then search forward to find the last nonempty line after that
+  while (end < editor.document.lineCount - 1) {
+    const line = editor.document.lineAt(end + 1);
+    if (line.isEmptyOrWhitespace) {
+      break;
+    }
+    end++;
+  }
+  // trim fenced code block markers if necessary
+  if (editor.document.lineAt(start).text.trim().startsWith('```')) {
+    start++;
+  }
+  if (editor.document.lineAt(end).text.trim().startsWith('```')) {
+    end--;
+  }
+  if (start >= end) {
+    return null;
+  }
+  return new vscode.Selection(
+    new vscode.Position(start, 0),
+    new vscode.Position(end, editor.document.lineAt(end).text.length)
+  );
+}
+
 function getSelectionOrAll(editor: vscode.TextEditor | undefined) {
   if (!editor) {
     return "";
   };
   const { active, anchor } = editor.selection;
   if (active.line === anchor.line && active.character === anchor.character) {
-    return editor.document.getText();
+    const selection = findBlock(editor);
+    if (selection === null) { return ""; }
+    editor.selection = selection; // actually select text; prepare for re-insertion from webview
+    return editor.document.getText(selection);
   } else {
     return getSelection(editor).selection;
   }

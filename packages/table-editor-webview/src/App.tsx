@@ -925,7 +925,7 @@ function App() {
       setNumRowsRequest("Enter a positive integer");
       return;
     }
-    addRows(rowAddIndex, numRowsNumber);
+    addRows(rowAddIndex + 1, numRowsNumber);
     setNumRowsRequest("");
   }
 
