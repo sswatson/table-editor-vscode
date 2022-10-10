@@ -41,7 +41,7 @@ function findBlock(editor: vscode.TextEditor) {
   if (start === 0) {
     return null;
   }
-  // then search backward to find the first nonempty line before that
+  // then search backward to find the first empty line before that
   while (start > 0) {
     const line = editor.document.lineAt(start - 1);
     if (line.isEmptyOrWhitespace) {
@@ -49,7 +49,7 @@ function findBlock(editor: vscode.TextEditor) {
     }
     start--;
   }
-  // then search forward to find the last nonempty line after that
+  // then search forward to find the last empty line after that
   while (end < editor.document.lineCount - 1) {
     const line = editor.document.lineAt(end + 1);
     if (line.isEmptyOrWhitespace) {
