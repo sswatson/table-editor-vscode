@@ -80,7 +80,9 @@ export class TextCellTemplate implements CellTemplate<TextCell> {
             onPaste={e => e.stopPropagation()}
             onPointerDown={e => e.stopPropagation()}
             placeholder={cell.placeholder}
-            onKeyDown={onKeyDown}
+            onKeyDown={e => onKeyDown(e, (text: string) => {
+                onCellChanged(this.getCompatibleCell({ ...cell, text }), false)
+            })}
         />
     }
 }

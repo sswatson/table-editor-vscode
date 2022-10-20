@@ -1,20 +1,20 @@
 import { useEffect, useRef } from "react";
 
 interface CodeDialogProps {
-  numRowsRequest: string;
-  setNumRowsRequest: (numRowsRequest: string) => void;
-  numRows: string;
-  setNumRows: (numRows: string) => void;
-  submitNumRows: () => void;
+  numRequest: string;
+  setNumRequest: (numRowsRequest: string) => void;
+  number: string;
+  setNumber: (numRows: string) => void;
+  submitNumber: () => void;
 }
 
 const CodeDialog = (props: CodeDialogProps) => {
   const {
-    numRowsRequest,
-    setNumRowsRequest,
-    numRows,
-    setNumRows,
-    submitNumRows,
+    numRequest,
+    setNumRequest,
+    number,
+    setNumber,
+    submitNumber,
   } = props;
 
   const inputRef = useRef<HTMLInputElement>(null);
@@ -31,30 +31,30 @@ const CodeDialog = (props: CodeDialogProps) => {
 
   return (
     <>
-      { numRowsRequest }
+      { numRequest }
       <input
         ref={inputRef}
         onKeyDown={(event) => {
           if (event.key === "Enter") {
-            submitNumRows();
+            submitNumber();
           } else if (event.key === "Escape") {
-            setNumRowsRequest("");
+            setNumRequest("");
           }
         }}
         className="w-3/4 p-2 font-mono text-[0.7rem] bg-transparent text-gray-200 border border-gray-400 rounded resize-none"
-        value={numRows}
-        onChange={(event) => setNumRows(event.target.value)}
+        value={number}
+        onChange={(event) => setNumber(event.target.value)}
       />
       <div className="flex gap-4 justify-center items-center">
         <button
           className="px-2 py-1 border border-gray-400 text-gray-200 rounded"
-          onClick={() => setNumRowsRequest("")}
+          onClick={() => setNumRequest("")}
         >
           cancel
         </button>
         <button
           className="px-2 py-1 border border-gray-400 text-gray-300 rounded"
-          onClick={submitNumRows}
+          onClick={submitNumber}
         >
           submit
         </button>

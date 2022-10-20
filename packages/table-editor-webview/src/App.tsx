@@ -36,7 +36,7 @@ import type {
 } from 'mdast-util-from-markdown/lib';
 import { cmd, TextWidthMeasurer } from "./utils";
 import CodeDialog from "./CodeDialog";
-import NumRowsDialog from "./NumRowsDialog";
+import NumberDialog from "./NumberDialog";
 
 const STARTER_CSV = "A,B,C,D\n,,,\n,,,\n,,,\n,,,";
 const textWidthMeasurer = new TextWidthMeasurer();
@@ -145,45 +145,44 @@ const reorderArray = <T extends {}>(arr: T[], idxs: number[], to: number) => {
   return [...leftSide, ...movedElements, ...rightSide];
 };
 
-function isIllegalHeaderChange(
-  change: CellChange<Cell | TableEditorCell>,
-  prevColumns: Column[],
-) {
-  if (change.newCell.type !== "columnHeader") return false;
-  const newHeader = (change.newCell as ColumnHeaderCell).text;
-  const isHeaderRemove = newHeader === "";
-  const isDuplicatedHeader = prevColumns.map(col => col.columnId).includes(newHeader);
-  return isHeaderRemove || isDuplicatedHeader;
-}
-
 const applyChanges = (
   changes: CellChange<Cell | TableEditorCell>[],
   prevColumns: Column[],
   prevRecords: Record[],
   addHistoryItem?: (item: HistoryItem) => void,
 ) => {
-  let newRecords = [...prevRecords.map(record => ({...record}))],
-      newColumns = [...prevColumns.map(col => ({...col}))];
-  changes.forEach((change) => {
-    if (!isIllegalHeaderChange(change, prevColumns)) {
-      if (change.rowId !== "header") {
-          const recordIndex = change.rowId as number;
-          const fieldName = change.columnId;
-          newRecords[recordIndex][fieldName] = (change.newCell as TableEditorCell).text;
-      } else {
-        const fieldName = change.columnId;
-        const column = newColumns.find((c) => c.columnId === fieldName);
-        if (column) {
-          column.columnId = (change.newCell as TableEditorCell).text;
-        }
-        newRecords = newRecords.map((record) => {
-          const newRecord = {...record};
-          const value = newRecord[change.columnId];
-          delete newRecord[change.columnId];
-          return { ...newRecord, [(change.newCell as TableEditorCell).text]: value };
-        });
-      }
+  let headerMap = new Map(prevColumns.map(col => [col.columnId, col.columnId]));
+  let cellMap: Map<string, string> = new Map();
+  const same = {
+    newRecords: prevRecords,
+    newColumns: prevColumns,
+  };
+  // calculate the new headers accounting for all of the changes:
+  for (let change of changes) {
+    if (change.rowId === "header") {
+      if ((change.newCell as TableEditorCell).text === "") return same;
+      headerMap.set(change.columnId, (change.newCell as TableEditorCell).text);
     }
+  }
+  // no duplicate headers allowed
+  if (new Set(headerMap.values()).size !== headerMap.size) return same;
+  for (let change of changes) {
+    if (change.rowId !== "header") {
+      const newHeader = headerMap.get(change.columnId) as string;
+      cellMap.set(JSON.stringify([change.rowId, newHeader]), (change.newCell as TableEditorCell).text);
+    }
+  }
+  // calculate the new columns and records:
+  const newColumns = prevColumns.map(col => ({...col, columnId: headerMap.get(col.columnId) || col.columnId}));
+  const newRecords = prevRecords.map((record, rowNum) => {
+    const newRecord: Record = {};
+    for (let [oldHeader, newHeader] of headerMap) {
+      if (oldHeader === '_row_number') continue;
+      newRecord[newHeader] = (
+        cellMap.get(JSON.stringify([rowNum, newHeader])) || record[oldHeader] || ""
+      );
+    }
+    return newRecord;
   });
   if (addHistoryItem) {
     const undoChanges: CellChange<Cell | TableEditorCell>[] = changes.map(change => ({
@@ -204,20 +203,28 @@ const applyChanges = (
 
 const MAX_HISTORY = 100;
 
-function withColumnAdded(columns: Column[], records: Record[], newId: string, colIndex: number) {
+function withColumnsAdded(
+  columns: Column[],
+  records: Record[],
+  newIds: string[],
+  colIndex: number
+) {
   const newColumns = [
     ...columns.slice(0, colIndex),
-    {
+    ...newIds.map((newId) => ({
       columnId: newId,
       width: 120,
       resizable: true,
       reorderable: true,
-    },
+    })),
     ...columns.slice(colIndex),
   ];
   const newRecords = [
     ...records.map((record) => {
-      return { ...record, [newId]: "" };
+      return { 
+        ...record, 
+        ...newIds.reduce((acc, newId) => ({ ...acc, [newId]: "" }), {}) 
+      };
     }),
   ];
   return {
@@ -226,7 +233,7 @@ function withColumnAdded(columns: Column[], records: Record[], newId: string, co
   }
 }
 
-function withColumnRemoved(columns: Column[], records: Record[], colIds: string[]) {
+function withColumnsRemoved(columns: Column[], records: Record[], colIds: string[]) {
   const newRecords = [
     ...records.map((record) => {
       const newRecord = { ...record };
@@ -252,9 +259,10 @@ function App() {
   const [columns, setColumns] = React.useState<Column[]>([]);
   const [warning, setWarning] = React.useState(false);
   const [codeRequested, setCodeRequested] = React.useState("");
-  const [numRowsRequest, setNumRowsRequest] = React.useState("");
-  const [numRows, setNumRows] = React.useState("10");
-  const [rowAddIndex, setRowAddIndex] = React.useState(0);
+  const [numRequest, setNumRequest] = React.useState("");
+  const [dialogNumber, setDialogNumber] = React.useState("");
+  const [dialogPurpose, setDialogPurpose] = React.useState("");
+  const [insertionIndex, setInsertionIndex] = React.useState(0);
   const [code, setCode] = React.useState("");
   const [selectedColIds, setSelectedColIds] = React.useState<Id[]>([]);
   const [codeHistory, setCodeHistory] = React.useState<string[]>([]);
@@ -276,8 +284,8 @@ function App() {
     if (typeof (item[action]) === 'function') {
       (item[action] as Function)();
     } else if (Array.isArray(item[action])) {
-      const { newColumns, newRecords } = applyChanges
-        (item[action] as CellChange<TableEditorCell>[],
+      const { newColumns, newRecords } = applyChanges(
+        item[action] as CellChange<TableEditorCell>[],
         columns,
         records
       );
@@ -608,52 +616,60 @@ function App() {
     // link.click();
   }
 
-  function getNewId() {
-    let newId = "new column";
-    let ctr = 0;
-    while (true) {
-      const matchingCol = columns.find((col) => 
-        col.columnId === newId
-      );
-      if (matchingCol === undefined) break;
-      newId = `new column ${++ctr}`;
-    };
-    return newId;
+  function getNewIds(num: number) {
+    const newIds: {columnId: string}[] = [];
+    for (let i = 0; i < num; i++) {
+      let newId = "new column";
+      let ctr = 0;
+      while (true) {
+        const matchingCol = [...columns, ...newIds].find((col) => 
+          col.columnId === newId
+        );
+        if (matchingCol === undefined) break;
+        newId = `new column ${++ctr}`;
+      };
+      newIds.push({ columnId: newId });
+    }
+    return newIds.map((col) => col.columnId);
   }
 
-  function addColumn(
-    colIdx: number,
-    colId?: string,
-  ) {
-    const addCol = () => {
-      if (!colId) colId = getNewId();
-      const { newColumns, newRecords } = withColumnAdded(
+  function addColumns(colIdx: number, nCols = 1) {
+    const addCols = () => {
+      let colId = getNewIds(nCols);
+      const { newColumns, newRecords } = withColumnsAdded(
         columns,
         records,
         colId,
         colIdx,
       );
       setTableData(newColumns, newRecords);
+      return colId;
     }
-    const removeCol = () => {
-      if (!colId) colId = getNewId();
-      const { newColumns, newRecords } = withColumnRemoved(
+    const colIds: string[] = [];
+    const removeCols = () => {
+      const { newColumns, newRecords } = withColumnsRemoved(
         columns,
         records,
-        [colId],
+        colIds,
       );
       setTableData(newColumns, newRecords);
     }
-    addCol();
+    addCols();
     addHistoryItem({
-      do: addCol,
-      undo: removeCol,
+      do: addCols,
+      undo: removeCols,
     });
+  }
+
+  function addColumn(
+    colIdx: number,
+  ) {
+    addColumns(colIdx, 1);
   }
 
   function removeColumn(selectedColIds: Id[]) {
     function removeCol() {
-      const { newColumns, newRecords } = withColumnRemoved(
+      const { newColumns, newRecords } = withColumnsRemoved(
         columns,
         records,
         selectedColIds as string[],
@@ -811,8 +827,9 @@ function App() {
             id: "addRowBelow",
             label: "Add N Rows Below",
             handler: () => {
-              setNumRowsRequest("Enter number of rows:");
-              setRowAddIndex(rowIndex);
+              setNumRequest("Enter number of rows:");
+              setInsertionIndex(rowIndex);
+              setDialogPurpose("rows");
             },
           },
           {
@@ -834,7 +851,22 @@ function App() {
         {
           id: "addColumnAfter",
           label: "Add Column Right",
-          handler: () => addColumn(columns.findIndex((column) => column.columnId === selectedColIds[selectedColIds.length - 1]) + 1),
+          handler: () => addColumn(
+            columns.findIndex(
+              (column) => column.columnId === selectedColIds[selectedColIds.length - 1]
+            ) + 1
+          ),
+        },
+        {
+          id: "addColumnAfter",
+          label: "Add N Columns Right",
+          handler: () => {
+            setNumRequest("Enter number of columns:");
+            setInsertionIndex(columns.findIndex(
+              (column) => column.columnId === selectedColIds[selectedColIds.length - 1]
+            ) + 1);
+            setDialogPurpose("columns");
+          },
         },
         {
           id: "removeColumn",
@@ -919,14 +951,18 @@ function App() {
     }
   }
 
-  function submitNumRows() {
-    const numRowsNumber = parseInt(numRows);
-    if (isNaN(numRowsNumber) || numRowsNumber < 1) {
-      setNumRowsRequest("Enter a positive integer");
+  function submitDialogNumber() {
+    const dialogNumber_num: number = parseInt(dialogNumber);
+    if (isNaN(dialogNumber_num) || dialogNumber_num < 1) {
+      setNumRequest("Enter a positive integer");
       return;
     }
-    addRows(rowAddIndex + 1, numRowsNumber);
-    setNumRowsRequest("");
+    if (dialogPurpose === "rows") {
+      addRows(insertionIndex + 1, dialogNumber_num);
+    } else {
+      addColumns(insertionIndex + 1, dialogNumber_num);
+    }
+    setNumRequest("");
   }
 
   if (warning || !tableDataIsValid(columns, records)) return (
@@ -960,7 +996,7 @@ function App() {
           return;
         }
       }}>
-      { codeRequested || numRowsRequest
+      { codeRequested || numRequest
         ? <div className="absolute bottom-0 left-0 w-screen h-fit flex flex-col justify-center items-center gap-4 px-8 py-4 z-10 bg-[#333]">
             { codeRequested
               ? <CodeDialog
@@ -973,13 +1009,13 @@ function App() {
                 setCodeHistoryIndex={setCodeHistoryIndex}
                 submitCode={submitCode}/>
               : null }
-            { numRowsRequest
-              ? <NumRowsDialog
-                  numRowsRequest={numRowsRequest}
-                  setNumRowsRequest={setNumRowsRequest}
-                  numRows={numRows}
-                  setNumRows={setNumRows}
-                  submitNumRows={submitNumRows}/>
+            { numRequest
+              ? <NumberDialog
+                  numRequest={numRequest}
+                  setNumRequest={setNumRequest}
+                  number={dialogNumber}
+                  setNumber={setDialogNumber}
+                  submitNumber={submitDialogNumber}/>
                 : null }
           </div>
         : null }
