@@ -169,7 +169,10 @@ const applyChanges = (
   for (let change of changes) {
     if (change.rowId !== "header") {
       const newHeader = headerMap.get(change.columnId) as string;
-      cellMap.set(JSON.stringify([change.rowId, newHeader]), (change.newCell as TableEditorCell).text);
+      cellMap.set(
+        JSON.stringify([change.rowId, newHeader]), 
+        (change.newCell as TableEditorCell).text
+      );
     }
   }
   // calculate the new columns and records:
@@ -178,9 +181,11 @@ const applyChanges = (
     const newRecord: Record = {};
     for (let [oldHeader, newHeader] of headerMap) {
       if (oldHeader === '_row_number') continue;
-      newRecord[newHeader] = (
-        cellMap.get(JSON.stringify([rowNum, newHeader])) || record[oldHeader] || ""
-      );
+      let cellText = cellMap.get(JSON.stringify([rowNum, newHeader]));
+      if (cellText === undefined) {
+        cellText = record[oldHeader] || "";
+      }
+      newRecord[newHeader] = cellText;
     }
     return newRecord;
   });
@@ -460,7 +465,15 @@ function App() {
 
   const importJSON = (json: string) => {
     try {
-      const newRecords = JSON.parse(json.trim());
+      const jsonRecords = JSON.parse(json.trim());
+      if (!Array.isArray(jsonRecords)) return false;
+      const newRecords = jsonRecords.map(record => {
+        const newRecord: Record = {};
+        for (let field of Object.keys(record)) {
+          newRecord[field] = record[field].toString();
+        }
+        return newRecord;
+      });
       const headers = [...Object.keys(newRecords[0])];
       let newColumns = makeColumns(headers as string[]);
       newColumns = autofitColumns(newColumns, newRecords);
@@ -993,7 +1006,6 @@ function App() {
           } else {
             undo();
           }
-          return;
         }
       }}>
       { codeRequested || numRequest
