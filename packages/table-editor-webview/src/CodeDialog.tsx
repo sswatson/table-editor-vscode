@@ -44,7 +44,8 @@ const CodeDialog = (props: CodeDialogProps) => {
           <li><code>cell</code>: the value in the current cell</li>
           <li><code>row</code>: the value of the row, as an object keyed by the column headers</li>
           <li><code>table</code>: the whole table, as a list of row objects</li>
-          <li><code>index</code>: the row index of the current cell, starting from 1</li>
+          <li><code>index</code>: the row index of the current cell, starting from 0</li>
+          <li><code>previous</code>: the value of the cell above, <code>undefined</code> if row 1</li>
         </ul>
       </div>
       <textarea

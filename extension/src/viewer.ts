@@ -1,5 +1,7 @@
 import * as vscode from "vscode";
 import * as path from "path";
+import * as fs from "fs";
+import { TextDecoder } from "util";
 
 export type TableEditorFormat = 'csv' | 'md' | 'html' | 'json' | 'unknown';
 
@@ -103,7 +105,7 @@ export function openViewer(
 
   // handle messages from the webview
   const subscription = panel.webview.onDidReceiveMessage(
-    (message) => {
+    async (message) => {
       if (message.command === "EXPORT") {
         const { content } = message;
         const [editor] = vscode.window.visibleTextEditors;
@@ -114,6 +116,25 @@ export function openViewer(
               range,
               content
             );
+          });
+        }
+      } else if (message.command === "GET_PREAMBLE") {
+        // get workspace folder:
+        const folder = vscode.workspace.workspaceFolders?.[0];
+        if (folder) {
+          const file = path.join(folder.uri.fsPath, 'table-editor.js');
+          if (!fs.existsSync(file)) {
+            panel.webview.postMessage({
+              command: "SET_PREAMBLE",
+              preamble: "",
+            });
+            return;
+          }
+          const buffer = await fs.promises.readFile(file);
+          const preamble = new TextDecoder().decode(buffer);
+          panel.webview.postMessage({
+            command: "SET_PREAMBLE",
+            preamble,
           });
         }
       }

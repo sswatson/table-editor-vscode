@@ -21,12 +21,14 @@
 	],
 	"main": "./out/extension.js",
 	"contributes": {
-		"keybindings": [{
+		"keybindings": [
+			{
 				"command": "table-editor.open",
 				"key": "Ctrl+Shift+T",
 				"mac": "Cmd+Shift+T",
 				"when": "editorTextFocus"
-		}],
+			}
+		],
 		"commands": [
 			{
 				"command": "table-editor.open",
@@ -85,7 +87,7 @@
 	},
 	"license": "MIT",
 	"repository": {
-    "type": "git",
-    "url": "https://github.com/sswatson/table-editor-vscode"
-  }
+		"type": "git",
+		"url": "https://github.com/sswatson/table-editor-vscode"
+	}
 }

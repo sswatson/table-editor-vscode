@@ -34,9 +34,10 @@ import type {
 import type { 
   Root,
 } from 'mdast-util-from-markdown/lib';
-import { cmd, TextWidthMeasurer } from "./utils";
+import { cmd, smartCompare, TextWidthMeasurer } from "./utils";
 import CodeDialog from "./CodeDialog";
 import NumberDialog from "./NumberDialog";
+import { functionWithUtilsFromString } from "./runCode";
 
 const STARTER_CSV = "A,B,C,D\n,,,\n,,,\n,,,\n,,,";
 const textWidthMeasurer = new TextWidthMeasurer();
@@ -264,6 +265,7 @@ function App() {
   const [columns, setColumns] = React.useState<Column[]>([]);
   const [warning, setWarning] = React.useState(false);
   const [codeRequested, setCodeRequested] = React.useState("");
+  const [preamble, setPreamble] = React.useState("");
   const [numRequest, setNumRequest] = React.useState("");
   const [dialogNumber, setDialogNumber] = React.useState("");
   const [dialogPurpose, setDialogPurpose] = React.useState("");
@@ -537,6 +539,10 @@ function App() {
         } else if (data.format === "") {
           importCSV(STARTER_CSV);
         }
+      } else if (data.command === "SET_PREAMBLE") {
+        const { preamble } = data;
+        setPreamble(preamble);
+        console.log("receiving preamble", preamble);
       }
     };
 
@@ -890,10 +896,41 @@ function App() {
           id: "transformColumn",
           label: `Transform Column${selectedColIds.length === 1 ? "" : "s"}`,
           handler: () => {
+            vscode.postMessage({
+              command: "GET_PREAMBLE",
+            });
             setCodeRequested(
               `Enter an expression to transform the selected column${selectedColIds.length === 1 ? "" : "s"}.`
             );
             setSelectedColIds(selectedColIds);
+          }
+        },
+        {
+          id: "sortColumn",
+          label: `Sort on Column${selectedColIds.length === 1 ? "" : "s"}`,
+          handler: () => {
+            const newRecords = [...records].sort((record1, record2) => {
+              for (let colId of selectedColIds) {
+                const comparison = smartCompare(
+                  record1[colId], record2[colId]
+                );
+                if (comparison !== 0) {
+                  return comparison;
+                }
+              }
+              return 0;
+            });
+            addHistoryItem({
+              do: {
+                records: newRecords,
+                columns: columns,
+              },
+              undo: {
+                records,
+                columns,
+              }
+            });
+            setRecords(newRecords);
           }
         },
         ...menuOptions,
@@ -908,11 +945,13 @@ function App() {
   }
 
   function fromString( s:
-     number | 
-     string |
+    undefined | 
+    number | 
+    string |
     {[key: string]: string} |
     {[key: string]: string}[]
   ): any {
+    if (s === undefined) return undefined;
     if (typeof s === 'number') return s;
     if (Array.isArray(s)) return s.map(fromString)
     if (typeof s === 'object') {
@@ -922,11 +961,9 @@ function App() {
       }
       return obj;
     }
-    try {
-      return JSON.parse(s);
-    } catch (e) {
-      return s;
-    }
+    const num = Number(s);
+    if (!isNaN(num)) return num;
+    return s;
   }
 
   function submitCode() {
@@ -934,14 +971,26 @@ function App() {
       const newRecordFields: {[key: string]: string}[] = [];
       setCodeHistory((hist) => ([...hist, code]).slice(-MAX_HISTORY));
       setCodeHistoryIndex(codeHistory.length);
-      const f = eval("(cell, row, index, table) => " + code);
+      const f = functionWithUtilsFromString(
+        ["cell", "row", "index", "table", "previous"],
+        code,
+        preamble,
+      ) as any;
       for (let i = 0; i < records.length; i++) {
         newRecordFields.push({});
         const record = records[i];
         for (let j = 0; j < selectedColIds.length; j++) {
           const colId = selectedColIds[j];
           newRecordFields[i][colId] = stringify(
-            f(...[record[colId], record, i + 1, records].map(fromString))
+            f(...[
+              record[colId],  // cell
+              record,         // row
+              i,              // index
+              records,        // table
+              ( i > 0         // previous
+                ? newRecordFields[i - 1][colId]
+                : undefined ),
+            ].map(fromString))
           );
         }
       }

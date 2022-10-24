@@ -33,8 +33,36 @@ The "Transform Column" feature in the column menu allows you to write code to tr
 ```javascript
 "\"" + value + "\""
 ```
-The available variables are `cell`, `index`, `row`, and `table`.
+The available variables are `cell`, `index`, `row`, `table`, and `previous`.
 
-The feature works by appending the code you supply to the text `(cell, index, row, table) => ` and then evaluating the resulting expression to obtain a (Javascript) function. This function is applied to each cell in the selected column or columns and the value returned by the function is used to replace the cell's contents.
+The feature works by appending the code you supply to the text `(cell, index, row, table, previous) => ` and then evaluating the resulting expression to obtain a (Javascript) function. This function is applied to each cell in the selected column or columns and the value returned by the function is used to replace the cell's contents. You have access to [dayjs](https://day.js.org/) as `dayjs` and to [lodash](https://lodash.com/) as `_`.
 
-The formula is not stored in the cell; if you need to edit your formula, do ⌘-Z or ctrl-Z to undo the transformation and select "Transform Column" again. The formula editor stores the history of formulas you've submitted during the current session.
+The formula is not stored in the cell; if you need to edit your formula, do ⌘-Z or ctrl-Z to undo the transformation and select "Transform Column" again. The formula editor stores the history of formulas you've submitted during the current session. You can also define functions for re-use in a file called `table-editor.js` in the root of your project (that is, the root of the folder you have open in your editor). The contents of that file are prepended to the function string mentioned above.
+
+*Examples*.
+
+* To fill a column with successive dates starting from 01 January 2022:
+
+    ```javascript
+    // in table-editor.js: 
+    function addOneDay(day) {
+      return day === undefined ? "2022-01-01" : dayjs(day).add(1, "day").format("YYYY-MM-DD");
+    }
+
+    // in the formula editor:
+    addOneDay(previous)
+    ```
+
+* To fill a column with random numbers between 0 and 1:
+
+    ```javascript
+    // in the formula editor:
+    Math.random()
+    ```
+
+* To define a column to be the sum of two other columns `A` and `B`:
+
+    ```javascript
+    // in the formula editor:
+    row.A + row.B
+    ```

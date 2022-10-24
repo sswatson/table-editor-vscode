@@ -11,7 +11,10 @@
   },
   "dependencies": {
     "@silevis/reactgrid": "^4.0.4",
+    "@types/lodash-es": "^4.17.6",
+    "dayjs": "^1.11.6",
     "html-table-to-json": "^1.0.0",
+    "lodash-es": "^4.17.21",
     "mdast-util-from-markdown": "^1.2.0",
     "mdast-util-gfm-table": "^1.0.6",
     "micromark-extension-gfm-table": "^1.0.5",
