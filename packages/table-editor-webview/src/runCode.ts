@@ -1,6 +1,9 @@
 
 import dayjs from 'dayjs';
 import _ from 'lodash-es';
+import Chance from 'chance';
+
+const chance = new Chance();
 
 function functionFromString(code: string, preamble = '') {
   return new Function(`'use strict';${preamble};return ${code};`)();
@@ -10,7 +13,7 @@ export function functionWithUtilsFromString(
   argNames: string[], code: string, preamble = ''
 ) {
   return (...args: any[]) => functionFromString(
-    `(dayjs, _, ${argNames.join(", ")}) => ${code}`,
+    `(_, dayjs, chance, ${argNames.join(", ")}) => ${code}`,
     preamble
-  )(dayjs, _, ...args);
+  )(_, dayjs, chance, ...args);
 }
