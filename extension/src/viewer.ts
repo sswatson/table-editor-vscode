@@ -223,11 +223,14 @@ export class ReactPanel {
     const scriptPathOnDisk = vscode.Uri.file(
       path.join(this._extensionPath, "build", "index.js")
     );
-    const scriptUri = scriptPathOnDisk.with({ scheme: "vscode-resource" });
+    const scriptUri = this._panel.webview.asWebviewUri(scriptPathOnDisk);
     const stylePathOnDisk = vscode.Uri.file(
       path.join(this._extensionPath, "build", "index.css")
     );
-    const styleUri = stylePathOnDisk.with({ scheme: "vscode-resource" });
+    const styleUri = this._panel.webview.asWebviewUri(stylePathOnDisk);
+    const baseHref = this._panel.webview.asWebviewUri(
+      vscode.Uri.file(path.join(this._extensionPath, "build"))
+    );
 
     // Use a nonce to whitelist which scripts can be run
     const nonce = getNonce();
@@ -244,9 +247,7 @@ export class ReactPanel {
                   <title>React App</title>
                   <link rel="stylesheet" type="text/css" href="${styleUri}">
                   <meta http-equiv="Content-Security-Policy" content="img-src  * blob: data: vscode-resource: https:; script-src 'nonce-${nonce}' 'unsafe-eval'; font-src 'self' data:; style-src vscode-resource: 'unsafe-inline' http: https: data:;">
-                  <base href="${vscode.Uri.file(
-                    path.join(this._extensionPath, "build")
-                  ).with({ scheme: "vscode-resource" })}/">
+                  <base href="${baseHref}/">
               </head>
 
               <body>
