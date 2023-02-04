@@ -559,7 +559,7 @@ function App() {
       return columns.map(column => {
         if (column.columnId === "_row_number") return null;
         return record[column.columnId];
-      }).filter(Boolean);
+      }).filter(x => x !== null);
     });
     const csv = Papa.unparse({
       fields: head as string[],
