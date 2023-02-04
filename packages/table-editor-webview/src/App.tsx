@@ -961,6 +961,7 @@ function App() {
       }
       return obj;
     }
+    if (s === '') return s;
     const num = Number(s);
     if (!isNaN(num)) return num;
     return s;
