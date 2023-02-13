@@ -575,10 +575,7 @@ function App() {
   }
 
   const exportJSON = () => {
-    const json = JSON.stringify(records.map(record => {
-      const { id, ...rest } = record;
-      return rest;
-    }), null, 2);
+    const json = JSON.stringify(records, null, 2);
     exportContent(json);
     // const blob = new Blob([json], {type: "application/json"});
     // const url = URL.createObjectURL(blob);
