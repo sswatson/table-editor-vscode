@@ -3,21 +3,13 @@
 	"displayName": "Table Editor",
 	"publisher": "sswatson",
 	"description": "A spreadsheet-style editor for CSV, JSON, and Markdown tables.",
-	"version": "0.3.6",
+	"version": "0.3.7",
 	"icon": "assets/table-editor.png",
 	"engines": {
-		"vscode": "^1.71.0"
+		"vscode": "^1.75.0"
 	},
 	"categories": [
 		"Other"
-	],
-	"activationEvents": [
-		"onCommand:table-editor.open",
-		"onCommand:table-editor.openBlank",
-		"onCommand:table-editor.openCSV",
-		"onCommand:table-editor.openMD",
-		"onCommand:table-editor.openHTML",
-		"onCommand:table-editor.openJSON"
 	],
 	"main": "./out/extension.js",
 	"contributes": {

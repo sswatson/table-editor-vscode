@@ -6,13 +6,25 @@
   align-items: center;
 }
 
+.vscode-light .rg-columnHeader-cell {
+  background-color: rgb(245 245 244);
+}
+
 .rg-columnHeader-celleditor input {
   text-align: center;
   background-color: #111;
 }
 
+.vscode-light .rg-columnHeader-celleditor input {
+  background-color: white;
+}
+
 .rg-celleditor {
   background-color: #222;
+}
+
+.vscode-light .rg-celleditor {
+  background-color: rgb(245 245 244);
 }
 
 .rg-celleditor input {
@@ -22,6 +34,11 @@
 .reactgrid-content .rg-context-menu {
   background-color: #222;
   color: #EEE;
+}
+
+.vscode-light .reactgrid-content .rg-context-menu {
+  background-color: rgb(245 245 244);
+  color: #333;
 }
 
 .reactgrid-content .rg-context-menu .rg-context-menu-option:hover {

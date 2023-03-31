@@ -6,6 +6,10 @@
   background-opacity: 1!important;
 }
 
+.vscode-light .rg-header-cell {
+  background-color: rgb(245 245 244)!important;
+}
+
 .rg-cell {
   display: flex;
   justify-content: center;
@@ -18,6 +22,10 @@
 
 .reactgrid-content .rg-pane-shadow.shadow-top-left-corner {
   box-shadow: none;
+}
+
+.rg-pane-shadow {
+  box-shadow: none !important;
 }
 
 .reactgrid-content .rg-pane.rg-pane-top, .reactgrid-content .rg-pane.rg-pane-bottom, .reactgrid-content .rg-pane.rg-pane-left, .reactgrid-content .rg-pane.rg-pane-right {

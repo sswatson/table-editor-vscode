@@ -553,7 +553,7 @@ function App() {
     };
   }, []);
 
-  const exportCSV = () => {
+  const exportCSV = (delimiter = ",") => {
     const head = columns.map((c) => c.columnId).filter(id => id !== "_row_number");
     const body = records.map(record => {
       return columns.map(column => {
@@ -564,7 +564,9 @@ function App() {
     const csv = Papa.unparse({
       fields: head as string[],
       data: body,
-    })
+    }, {
+      delimiter,
+    });
     exportContent(csv);
     // const blob = new Blob([csv], {type: "text/csv"});
     // const url = URL.createObjectURL(blob);
@@ -790,6 +792,32 @@ function App() {
     setColumns(newColumns);
   }
 
+  async function expandAndPaste(selectedRanges: CellLocation[][], pasteHandler: any) {
+    const pastedText = await navigator.clipboard.readText();
+    const pastedRows = pastedText
+      .split("\n")
+      .map((line: string) =>
+        line
+          .split("\t")
+          .map((t) => ({ type: "text", text: t, value: parseFloat(t) }))
+    );
+    const [[{ columnId, rowId }]] = selectedRanges;
+    const colIdx = columns.findIndex((col) => col.columnId === columnId);
+    const rowIdx = rowId as number;
+    const numRows = pastedRows.length + rowIdx;
+    const numCols = pastedRows.reduce(
+      (max, row) => Math.max(max, row.length),
+      0
+    ) + colIdx;
+    if (numCols > columns.length) {
+      addColumns(columns.length, numCols - columns.length);
+    }
+    if (numRows > records.length) {
+      addRows(records.length, numRows - records.length);
+    }
+    pasteHandler();
+  }
+
   const simpleHandleContextMenu = (
     selectedRowIds: Id[],
     selectedColIds: Id[],
@@ -797,11 +825,23 @@ function App() {
     menuOptions: MenuOption[],
     selectedRanges: CellLocation[][],
   ): MenuOption[] => {
+    // @ts-ignore
+    const { handler: pasteHandler } = menuOptions.find((x) => x.id === "paste");
     menuOptions = [
+      {
+        id: "expandAndPaste",
+        label: "Expand and Paste",
+        handler: () => expandAndPaste(selectedRanges, pasteHandler),
+      },
       {
         id: "exportCSV",
         label: "Insert Table as CSV",
-        handler: exportCSV,
+        handler: () => exportCSV(","),
+      },
+      {
+        id: "exportTSV",
+        label: "Insert Table as TSV",
+        handler: () => exportCSV("\t"),
       },
       {
         id: "exportMD",
@@ -1059,14 +1099,14 @@ function App() {
         ? <div className="absolute bottom-0 left-0 w-screen h-fit flex flex-col justify-center items-center gap-4 px-8 py-4 z-10 bg-[#333]">
             { codeRequested
               ? <CodeDialog
-                codeRequested={codeRequested}
-                setCodeRequested={setCodeRequested}
-                code={code}
-                setCode={setCode}
-                codeHistory={codeHistory}
-                codeHistoryIndex={codeHistoryIndex}
-                setCodeHistoryIndex={setCodeHistoryIndex}
-                submitCode={submitCode}/>
+                  codeRequested={codeRequested}
+                  setCodeRequested={setCodeRequested}
+                  code={code}
+                  setCode={setCode}
+                  codeHistory={codeHistory}
+                  codeHistoryIndex={codeHistoryIndex}
+                  setCodeHistoryIndex={setCodeHistoryIndex}
+                  submitCode={submitCode}/>
               : null }
             { numRequest
               ? <NumberDialog
