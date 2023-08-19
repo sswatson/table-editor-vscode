@@ -1,5 +1,5 @@
 .rg-columnHeader-cell {
-  background-color: rgb(40, 40, 40);
+  background-color: var(--darker-bg-color);
   background-opacity: 1;
   display: flex;
   justify-content: center;
@@ -8,11 +8,11 @@
 
 .rg-columnHeader-celleditor input {
   text-align: center;
-  background-color: #111;
+  background-color: var(--bg-color);
 }
 
 .rg-celleditor {
-  background-color: #222;
+  background-color: var(--bg-color);
 }
 
 .rg-celleditor input {
@@ -20,11 +20,14 @@
 }
 
 .reactgrid-content .rg-context-menu {
-  background-color: #222;
-  color: #EEE;
+  background-color: var(--darker-bg-color);
+  color: var(--fg-color);
+  border: 1px solid var(--border-color);
+  /* makes the menu invisible while being repositioned: */
+  visibility: var(--rg-context-menu-visibility, visible);
 }
 
 .reactgrid-content .rg-context-menu .rg-context-menu-option:hover {
-  background-color: #444;
-  color: #FFF;
+  background-color: var(--bg-color);
+  color: var(--fg-color);
 }

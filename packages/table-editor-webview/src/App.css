@@ -1,8 +1,15 @@
+:root {
+  --darker-bg-color: var(--vscode-dropdown-background);
+  --bg-color: var(--vscode-editor-background);
+  --fg-color: var(--vscode-editor-foreground);
+  --border-color: var(--vscode-dropdown-border);
+}
+
 .rg-header-cell {
   display: flex;
   justify-content: center;
   align-items: center;
-  background-color: rgb(40, 40, 40)!important;
+  background-color: var(--darker-bg-color) !important;
   background-opacity: 1!important;
 }
 
@@ -30,5 +37,5 @@
 }
 
 .reactgrid-content .rg-pane .rg-cell {
-  border-color: #555;
+  border-color: var(--border-color);
 }

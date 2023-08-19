@@ -34,10 +34,12 @@ import type {
 import type { 
   Root,
 } from 'mdast-util-from-markdown/lib';
-import { cmd, smartCompare, TextWidthMeasurer } from "./utils";
+import { adjustMenuPosition, cmd, smartCompare, TextWidthMeasurer } from "./utils";
 import CodeDialog from "./CodeDialog";
 import NumberDialog from "./NumberDialog";
 import { functionWithUtilsFromString } from "./runCode";
+
+type AlignType = 'left' | 'right' | 'center' | null;
 
 const STARTER_CSV = "A,B,C,D\n,,,\n,,,\n,,,\n,,,";
 const textWidthMeasurer = new TextWidthMeasurer();
@@ -56,6 +58,7 @@ type HistoryItem = {
 
 function parseMD(doc: string) {
   function _getCellData(node: TableCell) {
+    if (!node.children.length) return "";
     return (node.children[0] as {value: string}).value;
   }
   function _getRowData(node: TableRow) {
@@ -72,7 +75,7 @@ function parseMD(doc: string) {
     mdastExtensions: [gfmTableFromMarkdown]
   });
   const rows = getData(tree);
-  const headers = rows[0];
+  const headers = rows[0].map((x, j) => x || `Column ${j + 1}`);
   const records = (rows as string[][]).slice(1).map((row: any) => {
     const obj: any = {};
     for (let i = 0; i < headers.length; i++) {
@@ -80,7 +83,8 @@ function parseMD(doc: string) {
     }
     return obj;
   });
-  return { headers, records };
+  const { align } = (tree.children[0] as Table);
+  return { headers, records, align };
 }
 
 declare var acquireVsCodeApi: any;
@@ -276,6 +280,7 @@ function App() {
   const [codeHistoryIndex, setCodeHistoryIndex] = React.useState(0);
   const [undoHistory, setUndoHistory] = React.useState<HistoryItem[]>([]);
   const [redoHistory, setRedoHistory] = React.useState<HistoryItem[]>([]);
+  const [align, setAlign] = React.useState<AlignType[] | null>(null);
 
   const addHistoryItem = (item: HistoryItem, preserveRedo?: boolean) => {
     setUndoHistory(hist => [
@@ -431,7 +436,8 @@ function App() {
 
   const importMD = (md: string) => {
     try {
-      const { headers, records: newRecords } = parseMD(md.trim());
+      const { headers, records: newRecords, align } = parseMD(md.trim());
+      if (typeof align !== "undefined") setAlign(align);
       let newColumns = makeColumns(headers as string[]);
       newColumns = autofitColumns(newColumns, newRecords);
       setTableData(newColumns, newRecords);
@@ -516,9 +522,24 @@ function App() {
   }
 
   React.useEffect(() => {
-    window.addEventListener("contextmenu", 
-      (e) => e.preventDefault(),
-    true);
+    window.addEventListener(
+      "contextmenu",
+      (e) => {
+        e.preventDefault();
+        document.documentElement.style.setProperty(
+          "--rg-context-menu-visibility",
+          "hidden"
+        );
+        setTimeout(() => {
+          adjustMenuPosition();
+          document.documentElement.style.setProperty(
+            "--rg-context-menu-visibility",
+            "visible"
+          );
+        }, 0);
+      },
+      true
+    );
   }, []);
 
   React.useEffect(() => {
@@ -542,7 +563,6 @@ function App() {
       } else if (data.command === "SET_PREAMBLE") {
         const { preamble } = data;
         setPreamble(preamble);
-        console.log("receiving preamble", preamble);
       }
     };
 
@@ -586,14 +606,15 @@ function App() {
   }
 
   const exportMD = () => {
-    const md = markdownTable([
-      columns.slice(1).map(c => c.columnId.toString()),
-      ...records.map(record => {
-      return [...Object.values(record)].map(x => x.toString());
-      })],
-      {
-        align: "",        
-      });
+    const md = markdownTable(
+      [
+        columns.slice(1).map((c) => c.columnId.toString()),
+        ...records.map((record) => {
+          return [...Object.values(record)].map((x) => x.toString());
+        }),
+      ],
+      {align}
+    );
     exportContent(md);
     // const blob = new Blob([md], {type: "text/markdown"});
     // const url = URL.createObjectURL(blob);
@@ -601,7 +622,7 @@ function App() {
     // link.href = url;
     // link.download = "export.md";
     // link.click();
-  }
+  };
 
   const exportHTML = () => {
     const html = `<table>

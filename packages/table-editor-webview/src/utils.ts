@@ -42,3 +42,36 @@ export function smartCompare(s1: string, s2: string) {
   // finally, compare as strings:
   return s1 > s2 ? 1 : s1 < s2 ? -1 : 0;
 }
+
+export function adjustMenuPosition() {
+  const menu = document.querySelector('.rg-context-menu') as HTMLDivElement | null;
+  if (!menu) {
+    console.log("no menu found");
+    return;
+  }
+
+  const rect = menu.getBoundingClientRect();
+  const windowWidth = window.innerWidth;
+  const windowHeight = window.innerHeight;
+
+  // Check if it's off the right edge of the window
+  if (rect.right > windowWidth) {
+    menu.style.left = `${menu.offsetLeft - (rect.right - windowWidth)}px`;
+  }
+
+  // Check if it's off the bottom edge of the window
+  const buffer = 20;
+  if (rect.bottom > windowHeight - buffer) {
+    menu.style.top = `${menu.offsetTop - (rect.bottom - windowHeight) - buffer}px`;
+  }
+
+  // Check if it's off the left edge of the window
+  if (rect.left < 0) {
+    menu.style.left = '0px';
+  }
+
+  // Check if it's off the top edge of the window
+  if (rect.top < 0) {
+    menu.style.top = '0px';
+  }
+}
