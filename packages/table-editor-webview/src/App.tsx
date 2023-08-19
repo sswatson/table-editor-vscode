@@ -83,7 +83,7 @@ function parseMD(doc: string) {
     }
     return obj;
   });
-  const { align } = (tree.children[0] as Table);
+  const align = (tree.children[0] as Table).align as AlignType[];
   return { headers, records, align };
 }
 
@@ -437,7 +437,11 @@ function App() {
   const importMD = (md: string) => {
     try {
       const { headers, records: newRecords, align } = parseMD(md.trim());
-      if (typeof align !== "undefined") setAlign(align);
+      if (align) {
+        setAlign(align);
+      } else {
+        setAlign(null);
+      }
       let newColumns = makeColumns(headers as string[]);
       newColumns = autofitColumns(newColumns, newRecords);
       setTableData(newColumns, newRecords);
@@ -613,7 +617,7 @@ function App() {
           return [...Object.values(record)].map((x) => x.toString());
         }),
       ],
-      {align}
+      {align: align ?? ""}
     );
     exportContent(md);
     // const blob = new Blob([md], {type: "text/markdown"});

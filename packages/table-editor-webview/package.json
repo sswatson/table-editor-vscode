@@ -12,10 +12,13 @@
   "dependencies": {
     "@silevis/reactgrid": "^4.0.5",
     "@types/lodash-es": "^4.17.6",
+    "@types/mdast": "^4.0.0",
     "chance": "^1.1.9",
+    "cheerio": "1.0.0-rc.12",
     "dayjs": "^1.11.6",
     "html-table-to-json": "^1.0.0",
     "lodash-es": "^4.17.21",
+    "markdown-table": "^3.0.2",
     "mdast-util-from-markdown": "^1.2.0",
     "mdast-util-gfm-table": "^1.0.6",
     "micromark-extension-gfm-table": "^1.0.5",
