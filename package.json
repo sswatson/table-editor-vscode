@@ -3,13 +3,8 @@
     "build": "turbo run build",
     "package": "turbo run package"
   },
-  "workspaces": [
-    "packages/*",
-    "extension"
-  ],
   "devDependencies": {
     "turbo": "^1.4.6"
   },
-  "private": true,
-  "packageManager": "yarn@1.22.19"
+  "private": true
 }

@@ -10,14 +10,14 @@ This extension provides support for editing CSV files in a spreadsheet-like inte
 To build this project, do
 
 ```
-yarn
-yarn build
+pnpm install
+pnpm build
 ```
 
 To package the extension as a VSIX file to be installed in VS Code, do
 
 ```
-yarn package
+pnpm package
 ```
 
 ## Installation

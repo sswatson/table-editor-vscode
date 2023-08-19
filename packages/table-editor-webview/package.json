@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build && yarn cp",
+    "build": "tsc && vite build && pnpm cp",
     "cp": "rm -rf ../../extension/build && mkdir ../../extension/build && cp dist/assets/index*.js ../../extension/build/index.js && cp dist/assets/index*.css ../../extension/build/index.css",
     "preview": "vite preview"
   },

@@ -6,7 +6,7 @@
 	"version": "0.3.8",
 	"icon": "assets/table-editor.png",
 	"engines": {
-		"vscode": "^1.71.0"
+		"vscode": "^1.75.0"
 	},
 	"categories": [
 		"Other"
@@ -49,19 +49,19 @@
 		]
 	},
 	"scripts": {
-		"vscode:prepublish": "yarn run build",
+		"vscode:prepublish": "pnpm build",
 		"package": "vsce package",
 		"esbuild-base": "esbuild ./src/extension.ts --bundle --outfile=build/extension.js --external:vscode --format=cjs --platform=node",
-		"build": "yarn run esbuild-base --minify",
+		"build": "pnpm run esbuild-base --minify",
 		"compile": "tsc -p ./",
 		"watch": "tsc -watch -p ./",
-		"pretest": "yarn run compile && yarn run lint",
+		"pretest": "pnpm compile && pnpm lint",
 		"lint": "eslint src --ext ts",
 		"test": "node ./out/test/runTest.js"
 	},
 	"dependencies": {
 		"markdown-table": "^3.0.2",
-		"table-editor-webview": "*"
+		"table-editor-webview": "workspace:*"
 	},
 	"devDependencies": {
 		"@types/glob": "^7.2.0",
