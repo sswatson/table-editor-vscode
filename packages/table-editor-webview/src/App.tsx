@@ -610,6 +610,10 @@ function App() {
   }
 
   const exportMD = () => {
+    let safeAlign: AlignType[] | "" = "";
+    if (align && align.length === columns.length - 1) {
+      safeAlign = align;
+    }
     const md = markdownTable(
       [
         columns.slice(1).map((c) => c.columnId.toString()),
@@ -617,7 +621,7 @@ function App() {
           return [...Object.values(record)].map((x) => x.toString());
         }),
       ],
-      {align: align ?? ""}
+      {align: safeAlign}
     );
     exportContent(md);
     // const blob = new Blob([md], {type: "text/markdown"});
@@ -684,6 +688,13 @@ function App() {
         colIdx,
       );
       setTableData(newColumns, newRecords);
+      if (align) {
+        setAlign([
+          ...align.slice(0, colIdx - 1),
+          ...Array.from({ length: nCols }).map(() => null),
+          ...align.slice(colIdx - 1)
+        ]);
+      }
       return colId;
     }
     const colIds: string[] = [];
@@ -715,6 +726,10 @@ function App() {
         records,
         selectedColIds as string[],
       );
+      setAlign(align => {
+        if (!align) return null;
+        return align.filter((_, i) => !selectedColIds.includes(columns[i].columnId));
+      });
       setTableData(newColumns, newRecords);
     }
     removeCol();
@@ -905,7 +920,7 @@ function App() {
             setNumRequest("Enter number of columns:");
             setInsertionIndex(columns.findIndex(
               (column) => column.columnId === selectedColIds[selectedColIds.length - 1]
-            ) + 1);
+            ));
             setDialogPurpose("columns");
           },
         },

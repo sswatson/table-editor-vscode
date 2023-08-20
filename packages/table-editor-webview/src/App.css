@@ -2,7 +2,7 @@
   --darker-bg-color: var(--vscode-dropdown-background);
   --bg-color: var(--vscode-editor-background);
   --fg-color: var(--vscode-editor-foreground);
-  --border-color: var(--vscode-dropdown-border);
+  --border-color: var(--vscode-sideBar-border);
 }
 
 .rg-header-cell {
