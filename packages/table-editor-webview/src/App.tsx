@@ -18,48 +18,48 @@ import "./column-header.css";
 import { ColumnHeaderCell, ColumnHeaderCellTemplate } from "./ColumnHeader";
 import { TextCellTemplate } from "./TextCellTemplate";
 import Papa from "papaparse";
-import {markdownTable} from 'markdown-table';
-import HTMLTableToJSON from './html-table-to-json';
+import { markdownTable } from "markdown-table";
+import HTMLTableToJSON from "./html-table-to-json";
 
-import {fromMarkdown} from 'mdast-util-from-markdown'
-import {gfmTable} from 'micromark-extension-gfm-table'
-import {gfmTableFromMarkdown} from 'mdast-util-gfm-table'
+import { fromMarkdown } from "mdast-util-from-markdown";
+import { gfmTable } from "micromark-extension-gfm-table";
+import { gfmTableFromMarkdown } from "mdast-util-gfm-table";
 
-import type {
-  TableCell,
-  TableRow,
-  Table,
-} from 'mdast';
+import type { TableCell, TableRow, Table } from "mdast";
 
-import type { 
-  Root,
-} from 'mdast-util-from-markdown/lib';
-import { adjustMenuPosition, cmd, smartCompare, TextWidthMeasurer } from "./utils";
+import type { Root } from "mdast-util-from-markdown/lib";
+import {
+  adjustMenuPosition,
+  cmd,
+  smartCompare,
+  TextWidthMeasurer,
+} from "./utils";
 import CodeDialog from "./CodeDialog";
 import NumberDialog from "./NumberDialog";
 import { functionWithUtilsFromString } from "./runCode";
 
-type AlignType = 'left' | 'right' | 'center' | null;
+type AlignType = "left" | "right" | "center" | null;
 
 const STARTER_CSV = "A,B,C,D\n,,,\n,,,\n,,,\n,,,";
 const textWidthMeasurer = new TextWidthMeasurer();
+const MAX_AUTO_WIDTH = 300;
 
-type TableState = { columns: Column[], records: Record[] };
+type TableState = { columns: Column[]; records: Record[] };
 
-type TableChange = 
-  (() => void) | 
-  CellChange<Cell | TableEditorCell>[] | 
-  TableState;
+type TableChange =
+  | (() => void)
+  | CellChange<Cell | TableEditorCell>[]
+  | TableState;
 
 type HistoryItem = {
-  do: TableChange,
-  undo: TableChange,
+  do: TableChange;
+  undo: TableChange;
 };
 
 function parseMD(doc: string) {
   function _getCellData(node: TableCell) {
     if (!node.children.length) return "";
-    return (node.children[0] as {value: string}).value;
+    return (node.children[0] as { value: string }).value;
   }
   function _getRowData(node: TableRow) {
     return node.children.map(_getCellData);
@@ -72,7 +72,7 @@ function parseMD(doc: string) {
   }
   const tree = fromMarkdown(doc, {
     extensions: [gfmTable],
-    mdastExtensions: [gfmTableFromMarkdown]
+    mdastExtensions: [gfmTableFromMarkdown],
   });
   const rows = getData(tree);
   const headers = rows[0].map((x, j) => x || `Column ${j + 1}`);
@@ -108,7 +108,7 @@ type ColumnId = string;
 
 const getRows = (
   records: Record[],
-  columnsOrder: ColumnId[],
+  columnsOrder: ColumnId[]
 ): TableEditorRow[] => {
   return [
     {
@@ -154,9 +154,11 @@ const applyChanges = (
   changes: CellChange<Cell | TableEditorCell>[],
   prevColumns: Column[],
   prevRecords: Record[],
-  addHistoryItem?: (item: HistoryItem) => void,
+  addHistoryItem?: (item: HistoryItem) => void
 ) => {
-  let headerMap = new Map(prevColumns.map(col => [col.columnId, col.columnId]));
+  let headerMap = new Map(
+    prevColumns.map((col) => [col.columnId, col.columnId])
+  );
   let cellMap: Map<string, string> = new Map();
   const same = {
     newRecords: prevRecords,
@@ -175,17 +177,20 @@ const applyChanges = (
     if (change.rowId !== "header") {
       const newHeader = headerMap.get(change.columnId) as string;
       cellMap.set(
-        JSON.stringify([change.rowId, newHeader]), 
+        JSON.stringify([change.rowId, newHeader]),
         (change.newCell as TableEditorCell).text
       );
     }
   }
   // calculate the new columns and records:
-  const newColumns = prevColumns.map(col => ({...col, columnId: headerMap.get(col.columnId) || col.columnId}));
+  const newColumns = prevColumns.map((col) => ({
+    ...col,
+    columnId: headerMap.get(col.columnId) || col.columnId,
+  }));
   const newRecords = prevRecords.map((record, rowNum) => {
     const newRecord: Record = {};
     for (let [oldHeader, newHeader] of headerMap) {
-      if (oldHeader === '_row_number') continue;
+      if (oldHeader === "_row_number") continue;
       let cellText = cellMap.get(JSON.stringify([rowNum, newHeader]));
       if (cellText === undefined) {
         cellText = record[oldHeader] || "";
@@ -195,11 +200,13 @@ const applyChanges = (
     return newRecord;
   });
   if (addHistoryItem) {
-    const undoChanges: CellChange<Cell | TableEditorCell>[] = changes.map(change => ({
-      ...change,
-      newCell: change.previousCell,
-      previousCell: change.newCell,
-    }));
+    const undoChanges: CellChange<Cell | TableEditorCell>[] = changes.map(
+      (change) => ({
+        ...change,
+        newCell: change.previousCell,
+        previousCell: change.newCell,
+      })
+    );
     addHistoryItem({
       do: changes,
       undo: undoChanges,
@@ -231,19 +238,23 @@ function withColumnsAdded(
   ];
   const newRecords = [
     ...records.map((record) => {
-      return { 
-        ...record, 
-        ...newIds.reduce((acc, newId) => ({ ...acc, [newId]: "" }), {}) 
+      return {
+        ...record,
+        ...newIds.reduce((acc, newId) => ({ ...acc, [newId]: "" }), {}),
       };
     }),
   ];
   return {
     newColumns,
     newRecords,
-  }
+  };
 }
 
-function withColumnsRemoved(columns: Column[], records: Record[], colIds: string[]) {
+function withColumnsRemoved(
+  columns: Column[],
+  records: Record[],
+  colIds: string[]
+) {
   const newRecords = [
     ...records.map((record) => {
       const newRecord = { ...record };
@@ -255,7 +266,11 @@ function withColumnsRemoved(columns: Column[], records: Record[], colIds: string
   ];
   const newColumns = [
     ...columns.filter(
-      (column) => !(typeof column.columnId === 'string' && colIds.includes(column.columnId))
+      (column) =>
+        !(
+          typeof column.columnId === "string" &&
+          colIds.includes(column.columnId)
+        )
     ),
   ];
   return {
@@ -283,17 +298,17 @@ function App() {
   const [align, setAlign] = React.useState<AlignType[] | null>(null);
 
   const addHistoryItem = (item: HistoryItem, preserveRedo?: boolean) => {
-    setUndoHistory(hist => [
+    setUndoHistory((hist) => [
       ...hist.slice(Math.max(0, hist.length - MAX_HISTORY + 1), hist.length),
-      item
+      item,
     ]);
     if (!preserveRedo) {
       setRedoHistory([]);
     }
   };
 
-  function performHistoryAction(item: HistoryItem, action: 'do' | 'undo') {
-    if (typeof (item[action]) === 'function') {
+  function performHistoryAction(item: HistoryItem, action: "do" | "undo") {
+    if (typeof item[action] === "function") {
       (item[action] as Function)();
     } else if (Array.isArray(item[action])) {
       const { newColumns, newRecords } = applyChanges(
@@ -313,18 +328,15 @@ function App() {
   function undo() {
     const lastItem = undoHistory.pop();
     if (!lastItem) return;
-    setRedoHistory(hist => [
-      ...hist,
-      lastItem,
-    ]);
-    performHistoryAction(lastItem, 'undo')
+    setRedoHistory((hist) => [...hist, lastItem]);
+    performHistoryAction(lastItem, "undo");
   }
 
   function redo() {
     const lastItem = redoHistory.pop();
     if (!lastItem) return;
     addHistoryItem(lastItem, true); // do preserve redo history
-    performHistoryAction(lastItem, 'do');
+    performHistoryAction(lastItem, "do");
   }
 
   function emptyRecord(): Record {
@@ -375,14 +387,14 @@ function App() {
       changes,
       columns,
       records,
-      addHistoryItem,
+      addHistoryItem
     );
     setTableData(newColumns, newRecords);
   };
 
-  const makeColumnSpec = (c: string) => ({ 
-    columnId: c, 
-    width: 100, 
+  const makeColumnSpec = (c: string) => ({
+    columnId: c,
+    width: 100,
     resizable: true,
     reorderable: true,
   });
@@ -407,14 +419,14 @@ function App() {
       if (result !== false) return;
     }
     setWarning(true);
-  }
+  };
 
   const importCSV = (csv: string) => {
     try {
       const { data, meta } = Papa.parse(csv.trim(), { header: true });
       if (!meta.fields) return;
-      let newColumns = makeColumns(meta.fields)
-      const newRecords = (data as Record[]).map(row => {
+      let newColumns = makeColumns(meta.fields);
+      const newRecords = (data as Record[]).map((row) => {
         const newRecord: Record = {};
         for (let field of meta.fields ?? []) {
           newRecord[field] = row[field];
@@ -432,7 +444,7 @@ function App() {
       setWarning(true);
       return false;
     }
-  }
+  };
 
   const importMD = (md: string) => {
     try {
@@ -479,7 +491,7 @@ function App() {
     try {
       const jsonRecords = JSON.parse(json.trim());
       if (!Array.isArray(jsonRecords)) return false;
-      const newRecords = jsonRecords.map(record => {
+      const newRecords = jsonRecords.map((record) => {
         const newRecord: Record = {};
         for (let field of Object.keys(record)) {
           newRecord[field] = record[field].toString();
@@ -506,11 +518,11 @@ function App() {
       {
         columnId: "_row_number",
         width: 50,
-        resizable: true
+        resizable: true,
       },
       ...cols.map(makeColumnSpec),
     ];
-  }
+  };
 
   const vscodeRef = React.useRef<any>(null);
   if (!vscodeRef.current) {
@@ -523,7 +535,7 @@ function App() {
       command: "EXPORT",
       content,
     });
-  }
+  };
 
   React.useEffect(() => {
     window.addEventListener(
@@ -548,7 +560,7 @@ function App() {
 
   React.useEffect(() => {
     const handler = (event: MessageEvent) => {
-      const { data } = event; 
+      const { data } = event;
       if (data.command === "LOAD_TABLE") {
         const { content } = data;
         if (data.format === "html") {
@@ -578,17 +590,21 @@ function App() {
   }, []);
 
   const exportCSV = () => {
-    const head = columns.map((c) => c.columnId).filter(id => id !== "_row_number");
-    const body = records.map(record => {
-      return columns.map(column => {
-        if (column.columnId === "_row_number") return null;
-        return record[column.columnId];
-      }).filter(x => x !== null);
+    const head = columns
+      .map((c) => c.columnId)
+      .filter((id) => id !== "_row_number");
+    const body = records.map((record) => {
+      return columns
+        .map((column) => {
+          if (column.columnId === "_row_number") return null;
+          return record[column.columnId];
+        })
+        .filter((x) => x !== null);
     });
     const csv = Papa.unparse({
       fields: head as string[],
       data: body,
-    })
+    });
     exportContent(csv);
     // const blob = new Blob([csv], {type: "text/csv"});
     // const url = URL.createObjectURL(blob);
@@ -596,7 +612,7 @@ function App() {
     // link.href = url;
     // link.download = "export.csv";
     // link.click();
-  }
+  };
 
   const exportJSON = () => {
     const json = JSON.stringify(records, null, 2);
@@ -607,7 +623,7 @@ function App() {
     // link.href = url;
     // link.download = "export.json";
     // link.click();
-  }
+  };
 
   const exportMD = () => {
     let safeAlign: AlignType[] | "" = "";
@@ -621,7 +637,7 @@ function App() {
           return [...Object.values(record)].map((x) => x.toString());
         }),
       ],
-      {align: safeAlign}
+      { align: safeAlign }
     );
     exportContent(md);
     // const blob = new Blob([md], {type: "text/markdown"});
@@ -637,19 +653,19 @@ function App() {
   <thead>
     <tr>
       ${columns
-          .slice(1)
-          .map(c => `<th>${c.columnId}</th>`)
-          .join("\n      ")}
+        .slice(1)
+        .map((c) => `<th>${c.columnId}</th>`)
+        .join("\n      ")}
     </tr>
   </thead>
   <tbody>
-    ${records.map(record => {
-      return `<tr>
-      ${[...Object.values(record)]
-          .map(x => `<td>${x}</td>`)
-          .join("\n      ")}
+    ${records
+      .map((record) => {
+        return `<tr>
+      ${[...Object.values(record)].map((x) => `<td>${x}</td>`).join("\n      ")}
     </tr>`;
-    }).join("\n    ")}
+      })
+      .join("\n    ")}
   </tbody>
 </table>`;
     exportContent(html);
@@ -659,20 +675,20 @@ function App() {
     // link.href = url;
     // link.download = "export.html";
     // link.click();
-  }
+  };
 
   function getNewIds(num: number) {
-    const newIds: {columnId: string}[] = [];
+    const newIds: { columnId: string }[] = [];
     for (let i = 0; i < num; i++) {
       let newId = "new column";
       let ctr = 0;
       while (true) {
-        const matchingCol = [...columns, ...newIds].find((col) => 
-          col.columnId === newId
+        const matchingCol = [...columns, ...newIds].find(
+          (col) => col.columnId === newId
         );
         if (matchingCol === undefined) break;
         newId = `new column ${++ctr}`;
-      };
+      }
       newIds.push({ columnId: newId });
     }
     return newIds.map((col) => col.columnId);
@@ -685,27 +701,27 @@ function App() {
         columns,
         records,
         colId,
-        colIdx,
+        colIdx
       );
       setTableData(newColumns, newRecords);
       if (align) {
         setAlign([
           ...align.slice(0, colIdx - 1),
           ...Array.from({ length: nCols }).map(() => null),
-          ...align.slice(colIdx - 1)
+          ...align.slice(colIdx - 1),
         ]);
       }
       return colId;
-    }
+    };
     const colIds: string[] = [];
     const removeCols = () => {
       const { newColumns, newRecords } = withColumnsRemoved(
         columns,
         records,
-        colIds,
+        colIds
       );
       setTableData(newColumns, newRecords);
-    }
+    };
     addCols();
     addHistoryItem({
       do: addCols,
@@ -713,9 +729,7 @@ function App() {
     });
   }
 
-  function addColumn(
-    colIdx: number,
-  ) {
+  function addColumn(colIdx: number) {
     addColumns(colIdx, 1);
   }
 
@@ -724,11 +738,13 @@ function App() {
       const { newColumns, newRecords } = withColumnsRemoved(
         columns,
         records,
-        selectedColIds as string[],
+        selectedColIds as string[]
       );
-      setAlign(align => {
+      setAlign((align) => {
         if (!align) return null;
-        return align.filter((_, i) => !selectedColIds.includes(columns[i].columnId));
+        return align.filter(
+          (_, i) => !selectedColIds.includes(columns[i].columnId)
+        );
       });
       setTableData(newColumns, newRecords);
     }
@@ -743,36 +759,39 @@ function App() {
   }
 
   function addRows(rowIndex: number, nRows = 1) {
-    const add = () => setRecords((prevRecords) => [
-      ...prevRecords.slice(0, rowIndex),
-      ...Array.from({ length: nRows }).map(emptyRecord),
-      ...prevRecords.slice(rowIndex),
-    ]);
-    add()
-    addHistoryItem({
-      undo: () => setRecords((prevRecords) => [
+    const add = () =>
+      setRecords((prevRecords) => [
         ...prevRecords.slice(0, rowIndex),
-        ...prevRecords.slice(rowIndex + nRows),
-      ]),
-      do: add, 
+        ...Array.from({ length: nRows }).map(emptyRecord),
+        ...prevRecords.slice(rowIndex),
+      ]);
+    add();
+    addHistoryItem({
+      undo: () =>
+        setRecords((prevRecords) => [
+          ...prevRecords.slice(0, rowIndex),
+          ...prevRecords.slice(rowIndex + nRows),
+        ]),
+      do: add,
     });
   }
 
   function addRow(rowIndex: number) {
-    addRows(rowIndex, 1)
+    addRows(rowIndex, 1);
   }
 
   function removeRow(rowIndexes: number[]) {
-    const remove = () => setRecords((prevRecords) => [
-      ...prevRecords.filter((_, i) => !rowIndexes.includes(i)),
-    ]);
+    const remove = () =>
+      setRecords((prevRecords) => [
+        ...prevRecords.filter((_, i) => !rowIndexes.includes(i)),
+      ]);
     remove();
     addHistoryItem({
       do: remove,
       undo: {
         columns,
         records,
-      }
+      },
     });
   }
 
@@ -780,63 +799,116 @@ function App() {
     const colWidths = new Map();
     const headerRow = Object.fromEntries(
       columns
-        .map(col => col.columnId === "_row_number" ? "#" : col.columnId)
-        .map(x => [x, x])
+        .map((col) => (col.columnId === "_row_number" ? "#" : col.columnId))
+        .map((x) => [x, x])
     );
     for (let record of [headerRow, ...records]) {
       for (let key in record) {
         colWidths.set(
           key,
-          Math.max(
-            colWidths.get(key) || 0,
-            Math.ceil(textWidthMeasurer.measure(
-              record[key].toString(),
-              '13px / 19.5px -apple-system, "system-ui", sans-serif'
-            )),
-          ),
+          Math.min(
+            MAX_AUTO_WIDTH,
+            Math.max(
+              colWidths.get(key) || 0,
+              Math.ceil(
+                textWidthMeasurer.measure(
+                  record[key].toString(),
+                  '13px / 19.5px -apple-system, "system-ui", sans-serif'
+                )
+              )
+            )
+          )
         );
       }
     }
     const newColumns = columns.map((col, i) => ({
       ...col,
-      width: (colWidths.get(col.columnId) + 12) || col.width,
+      width: colWidths.get(col.columnId) + 12 || col.width,
     }));
     return newColumns;
-  }
+  };
 
   const autofit = (columns: Column[]) => {
     const colWidths = new Map();
-    [...document.querySelectorAll('.rg-cell')].forEach(node => {
+    [...document.querySelectorAll(".rg-cell")].forEach((node) => {
       const colIdx = parseInt(node.getAttribute("data-cell-colidx") || "-1");
       colWidths.set(
         colIdx,
         Math.max(
           colWidths.get(colIdx) || 0,
-          Math.ceil(textWidthMeasurer.measure(
-            node.textContent || "",
-            window.getComputedStyle(node).font,
-          )),
-        ),
+          Math.ceil(
+            textWidthMeasurer.measure(
+              node.textContent || "",
+              window.getComputedStyle(node).font
+            )
+          )
+        )
       );
     });
     const newColumns = columns.map((col, i) => ({
       ...col,
-      width: (colWidths.get(i) + 12) || col.width,
+      width: colWidths.get(i) + 12 || col.width,
     }));
     addHistoryItem({
       do: () => setColumns(newColumns),
       undo: () => setColumns(columns),
     });
     setColumns(newColumns);
-  }
+  };
+
+  const convertToMultiline = (selectedRanges: any) => {
+    const [cellLocation] = selectedRanges[0];
+    if (typeof cellLocation.rowId !== "number") return;
+    const cellChange: CellChange<TableEditorCell> = {
+      rowId: cellLocation.rowId,
+      columnId: cellLocation.columnId,
+      previousCell: {
+        type: "text",
+        text: records[cellLocation.rowId][cellLocation.columnId],
+      },
+      newCell: {
+        type: "text",
+        text: records[cellLocation.rowId][cellLocation.columnId] + "\n",
+      },
+      type: "text",
+    };
+    const { newColumns, newRecords } = applyChanges(
+      [cellChange],
+      columns,
+      records,
+      addHistoryItem
+    );
+    setTableData(newColumns, newRecords);
+  };
 
   const simpleHandleContextMenu = (
     selectedRowIds: Id[],
     selectedColIds: Id[],
     selectionMode: SelectionMode,
     menuOptions: MenuOption[],
-    selectedRanges: CellLocation[][],
+    selectedRanges: CellLocation[][]
   ): MenuOption[] => {
+    let multilineOptions: MenuOption[] = [];
+    if (
+      selectionMode === "range" &&
+      selectedRanges.length === 1 &&
+      selectedRanges[0].length === 1 &&
+      selectedRanges[0][0].rowId !== "header" && "_row_number"
+    ) {
+      const { rowId } = selectedRanges[0][0];
+      if (typeof rowId === "number") {
+        const content = records[rowId][selectedRanges[0][0].columnId];
+        if (!content.includes("\n")) {
+          multilineOptions = [
+            {
+              id: "convertCellToMultiline",
+              label: "Convert Cell to Multiline",
+              handler: () => convertToMultiline(selectedRanges),
+            },
+          ];
+        }
+      }
+    };
     menuOptions = [
       {
         id: "exportCSV",
@@ -863,11 +935,12 @@ function App() {
         label: "Autofit Columns",
         handler: () => autofit(columns),
       },
+      ...multilineOptions,
       ...menuOptions,
     ];
     if (selectionMode === "row") {
       const [rowIndex] = selectedRowIds.slice(-1);
-      if (typeof rowIndex === 'number') {
+      if (typeof rowIndex === "number") {
         menuOptions = [
           {
             id: "addRowAbove",
@@ -902,25 +975,36 @@ function App() {
         {
           id: "addColumnBefore",
           label: "Add Column Left",
-          handler: () => addColumn(columns.findIndex((column) => column.columnId === selectedColIds[selectedColIds.length - 1])),
+          handler: () =>
+            addColumn(
+              columns.findIndex(
+                (column) =>
+                  column.columnId === selectedColIds[selectedColIds.length - 1]
+              )
+            ),
         },
         {
           id: "addColumnAfter",
           label: "Add Column Right",
-          handler: () => addColumn(
-            columns.findIndex(
-              (column) => column.columnId === selectedColIds[selectedColIds.length - 1]
-            ) + 1
-          ),
+          handler: () =>
+            addColumn(
+              columns.findIndex(
+                (column) =>
+                  column.columnId === selectedColIds[selectedColIds.length - 1]
+              ) + 1
+            ),
         },
         {
           id: "addColumnAfter",
           label: "Add N Columns Right",
           handler: () => {
             setNumRequest("Enter number of columns:");
-            setInsertionIndex(columns.findIndex(
-              (column) => column.columnId === selectedColIds[selectedColIds.length - 1]
-            ));
+            setInsertionIndex(
+              columns.findIndex(
+                (column) =>
+                  column.columnId === selectedColIds[selectedColIds.length - 1]
+              )
+            );
             setDialogPurpose("columns");
           },
         },
@@ -937,10 +1021,12 @@ function App() {
               command: "GET_PREAMBLE",
             });
             setCodeRequested(
-              `Enter an expression to transform the selected column${selectedColIds.length === 1 ? "" : "s"}.`
+              `Enter an expression to transform the selected column${
+                selectedColIds.length === 1 ? "" : "s"
+              }.`
             );
             setSelectedColIds(selectedColIds);
-          }
+          },
         },
         {
           id: "sortColumn",
@@ -948,9 +1034,7 @@ function App() {
           handler: () => {
             const newRecords = [...records].sort((record1, record2) => {
               for (let colId of selectedColIds) {
-                const comparison = smartCompare(
-                  record1[colId], record2[colId]
-                );
+                const comparison = smartCompare(record1[colId], record2[colId]);
                 if (comparison !== 0) {
                   return comparison;
                 }
@@ -965,10 +1049,10 @@ function App() {
               undo: {
                 records,
                 columns,
-              }
+              },
             });
             setRecords(newRecords);
-          }
+          },
         },
         ...menuOptions,
       ];
@@ -977,28 +1061,29 @@ function App() {
   };
 
   function stringify(s: string) {
-    if (typeof s === 'string') return s;
+    if (typeof s === "string") return s;
     return JSON.stringify(s);
   }
 
-  function fromString( s:
-    undefined | 
-    number | 
-    string |
-    {[key: string]: string} |
-    {[key: string]: string}[]
+  function fromString(
+    s:
+      | undefined
+      | number
+      | string
+      | { [key: string]: string }
+      | { [key: string]: string }[]
   ): any {
     if (s === undefined) return undefined;
-    if (typeof s === 'number') return s;
-    if (Array.isArray(s)) return s.map(fromString)
-    if (typeof s === 'object') {
-      const obj: {[key: string]: any} = {};
+    if (typeof s === "number") return s;
+    if (Array.isArray(s)) return s.map(fromString);
+    if (typeof s === "object") {
+      const obj: { [key: string]: any } = {};
       for (const key in s) {
         obj[key] = fromString(s[key]);
       }
       return obj;
     }
-    if (s === '') return s;
+    if (s === "") return s;
     const num = Number(s);
     if (!isNaN(num)) return num;
     return s;
@@ -1006,13 +1091,13 @@ function App() {
 
   function submitCode() {
     try {
-      const newRecordFields: {[key: string]: string}[] = [];
-      setCodeHistory((hist) => ([...hist, code]).slice(-MAX_HISTORY));
+      const newRecordFields: { [key: string]: string }[] = [];
+      setCodeHistory((hist) => [...hist, code].slice(-MAX_HISTORY));
       setCodeHistoryIndex(codeHistory.length);
       const f = functionWithUtilsFromString(
         ["cell", "row", "index", "table", "previous"],
         code,
-        preamble,
+        preamble
       ) as any;
       for (let i = 0; i < records.length; i++) {
         newRecordFields.push({});
@@ -1020,30 +1105,38 @@ function App() {
         for (let j = 0; j < selectedColIds.length; j++) {
           const colId = selectedColIds[j];
           newRecordFields[i][colId] = stringify(
-            f(...[
-              record[colId],  // cell
-              record,         // row
-              i,              // index
-              records,        // table
-              ( i > 0         // previous
-                ? newRecordFields[i - 1][colId]
-                : undefined ),
-            ].map(fromString))
+            f(
+              ...[
+                record[colId], // cell
+                record, // row
+                i, // index
+                records, // table
+                i > 0 // previous
+                  ? newRecordFields[i - 1][colId]
+                  : undefined,
+              ].map(fromString)
+            )
           );
         }
       }
       addHistoryItem({
         do: {
-          records: records.map((record, j) => ({...record, ...newRecordFields[j]})),
+          records: records.map((record, j) => ({
+            ...record,
+            ...newRecordFields[j],
+          })),
           columns: columns,
         },
         undo: {
           records,
           columns,
-        }
+        },
       });
-      setRecords(records => {
-        return records.map((record, j) => ({...record, ...newRecordFields[j]}));
+      setRecords((records) => {
+        return records.map((record, j) => ({
+          ...record,
+          ...newRecordFields[j],
+        }));
       });
       setCodeRequested("");
     } catch (e) {
@@ -1065,59 +1158,65 @@ function App() {
     setNumRequest("");
   }
 
-  if (warning || !tableDataIsValid(columns, records)) return (
-    <div className="w-screen h-screen flex flex-col justify-center items-center gap-16">
-      { warning
-        ? <p className="text-white max-w-sm">
-            Import failed. Please check that the text you selected is in the correct format. 
+  if (warning || !tableDataIsValid(columns, records))
+    return (
+      <div className="w-screen h-screen flex flex-col justify-center items-center gap-16">
+        {warning ? (
+          <p className="text-white max-w-sm">
+            Import failed. Please check that the text you selected is in the
+            correct format.
           </p>
-        : null }
-      <button 
-        className="px-4 py-2 bg-gray-800 text-white rounded-md"
-        onClick={() => {
-        importCSV(STARTER_CSV);
-        setWarning(false);
-      }}>
-        new table
-      </button>
-    </div>
-  );
+        ) : null}
+        <button
+          className="px-4 py-2 bg-gray-800 text-white rounded-md"
+          onClick={() => {
+            importCSV(STARTER_CSV);
+            setWarning(false);
+          }}
+        >
+          new table
+        </button>
+      </div>
+    );
 
   return (
-    <div 
+    <div
       className="min-w-[100vw] min-h-[100vh] w-fit flex justify-center items-center py-8"
       onKeyDown={(e) => {
-        if (cmd(e) && e.key === 'z') {
+        if (cmd(e) && e.key === "z") {
           if (e.shiftKey) {
             redo();
           } else {
             undo();
           }
         }
-      }}>
-      { codeRequested || numRequest
-        ? <div className="absolute bottom-0 left-0 w-screen h-fit flex flex-col justify-center items-center gap-4 px-8 py-4 z-10 bg-[#333]">
-            { codeRequested
-              ? <CodeDialog
-                codeRequested={codeRequested}
-                setCodeRequested={setCodeRequested}
-                code={code}
-                setCode={setCode}
-                codeHistory={codeHistory}
-                codeHistoryIndex={codeHistoryIndex}
-                setCodeHistoryIndex={setCodeHistoryIndex}
-                submitCode={submitCode}/>
-              : null }
-            { numRequest
-              ? <NumberDialog
-                  numRequest={numRequest}
-                  setNumRequest={setNumRequest}
-                  number={dialogNumber}
-                  setNumber={setDialogNumber}
-                  submitNumber={submitDialogNumber}/>
-                : null }
-          </div>
-        : null }
+      }}
+    >
+      {codeRequested || numRequest ? (
+        <div className="absolute bottom-0 left-0 w-screen h-fit flex flex-col justify-center items-center gap-4 px-8 py-4 z-10 bg-[#333]">
+          {codeRequested ? (
+            <CodeDialog
+              codeRequested={codeRequested}
+              setCodeRequested={setCodeRequested}
+              code={code}
+              setCode={setCode}
+              codeHistory={codeHistory}
+              codeHistoryIndex={codeHistoryIndex}
+              setCodeHistoryIndex={setCodeHistoryIndex}
+              submitCode={submitCode}
+            />
+          ) : null}
+          {numRequest ? (
+            <NumberDialog
+              numRequest={numRequest}
+              setNumRequest={setNumRequest}
+              number={dialogNumber}
+              setNumber={setDialogNumber}
+              submitNumber={submitDialogNumber}
+            />
+          ) : null}
+        </div>
+      ) : null}
       <ReactGrid
         rows={rows}
         columns={columns}
@@ -1132,7 +1231,7 @@ function App() {
         stickyTopRows={1}
         customCellTemplates={{
           text: new TextCellTemplate(),
-          columnHeader: new ColumnHeaderCellTemplate()
+          columnHeader: new ColumnHeaderCellTemplate(),
         }}
       />
     </div>

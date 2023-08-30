@@ -1,6 +1,7 @@
 
 import React from 'react';
 import dayjs from 'dayjs';
+import { firstLine } from './cellUtils';
 
 export function cmd(e: React.KeyboardEvent) {
   const isMacOs = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
@@ -17,6 +18,7 @@ export class TextWidthMeasurer {
   }
 
   measure(text: string, font: string) {
+    text = firstLine(text); // we only show the first line of multi-line cells
     if (text.length === 0) return 0;
     this.context.font = font;
     return this.context.measureText(text).width;

@@ -19,6 +19,17 @@
   text-align: center;
 }
 
+.rg-celleditor textarea {
+  width: 120%;
+  min-width: 100px;
+  background-color: var(--bg-color);
+  resize: none;
+  height: 120px;
+  padding: 0.25rem;
+  border: 1px solid var(--border-color);
+  margin-right: -2.5rem;
+}
+
 .reactgrid-content .rg-context-menu {
   background-color: var(--darker-bg-color);
   color: var(--fg-color);
