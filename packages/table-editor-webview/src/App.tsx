@@ -11,6 +11,7 @@ import {
   MenuOption,
   SelectionMode,
   CellLocation,
+  DropPosition,
 } from "@silevis/reactgrid";
 import "@silevis/reactgrid/styles.css";
 import "./App.css";
@@ -37,6 +38,9 @@ import {
 import CodeDialog from "./CodeDialog";
 import NumberDialog from "./NumberDialog";
 import { functionWithUtilsFromString } from "./runCode";
+
+import yaml from "js-yaml";
+import { RowHeaderCell, RowHeaderCellTemplate } from "./RowHeaderCellTemplate";
 
 type AlignType = "left" | "right" | "center" | null;
 
@@ -101,7 +105,7 @@ interface Record {
   [key: string]: string;
 }
 
-type TableEditorCell = TextCell | ColumnHeaderCell | HeaderCell;
+type TableEditorCell = TextCell | ColumnHeaderCell | RowHeaderCell;
 type TableEditorRow = Row<TableEditorCell>;
 
 type ColumnId = string;
@@ -114,7 +118,7 @@ const getRows = (
     {
       rowId: "header",
       cells: [
-        { type: "header", text: "#" },
+        { type: "rowHeader", text: "#" },
         ...columnsOrder.map((columnId) => ({
           type: "columnHeader" as "columnHeader",
           text: columnId,
@@ -123,8 +127,9 @@ const getRows = (
     },
     ...records.map<TableEditorRow>((record, idx) => ({
       rowId: idx,
+      reorderable: true,
       cells: [
-        { type: "header", text: (idx + 1).toString() },
+        { type: "rowHeader", text: (idx + 1).toString() },
         ...columnsOrder.map((columnId) => ({
           type: "text" as "text",
           text: record[columnId] || "",
@@ -372,6 +377,31 @@ function App() {
     setColumns((prevColumns) => reorderArray(prevColumns, columnIdxs, to));
   };
 
+  const handleRowsReorder = (targetRowId: Id, rowIds: Id[], dropPosition: DropPosition) => {
+    if (typeof targetRowId !== "number") return;
+    const newColumns = [...columns];
+    const insertionPosition = dropPosition === "after" ? targetRowId + 1 : targetRowId;
+    const newRecords = [
+      ...records
+        .slice(0, insertionPosition)
+        .filter((_, idx) => !rowIds.includes(idx)),
+      ...rowIds
+        .map((rowId) => records[rowId as number]),
+      ...records
+        .slice(insertionPosition)
+        .filter((_, idx) => !rowIds.includes(idx + insertionPosition)),
+    ];
+    addHistoryItem({
+      do: { columns: newColumns, records: newRecords },
+      undo: { columns, records },
+    });
+    setRecords(newRecords);
+  };
+
+  const handleCanReorderRows = (targetRowId: Id): boolean => {
+    return targetRowId !== 'header';
+  }
+
   const handleColumnResize = (ci: Id, width: number) => {
     setColumns((prevColumns) => {
       const columnIndex = prevColumns.findIndex((el) => el.columnId === ci);
@@ -414,7 +444,7 @@ function App() {
   }
 
   const importUnknown = (data: string) => {
-    for (let importFormat of [importJSON, importHTML, importMD, importCSV]) {
+    for (let importFormat of [importJSON, importYAML, importHTML, importMD, importCSV]) {
       const result = importFormat(data);
       if (result !== false) return;
     }
@@ -487,27 +517,41 @@ function App() {
     }
   };
 
+  const handleJsonRecords = (jsonRecords: unknown) => {
+    if (!Array.isArray(jsonRecords)) return false;
+    const newRecords = jsonRecords.map((record) => {
+      const newRecord: Record = {};
+      for (let field of Object.keys(record)) {
+        newRecord[field] = record[field].toString();
+      }
+      return newRecord;
+    });
+    const headers = [...Object.keys(newRecords[0])];
+    let newColumns = makeColumns(headers as string[]);
+    newColumns = autofitColumns(newColumns, newRecords);
+    setTableData(newColumns, newRecords);
+    addHistoryItem({
+      do: { columns: newColumns, records: newRecords },
+      undo: { columns, records },
+    });
+    return true;
+  };
+
   const importJSON = (json: string) => {
     try {
       const jsonRecords = JSON.parse(json.trim());
-      if (!Array.isArray(jsonRecords)) return false;
-      const newRecords = jsonRecords.map((record) => {
-        const newRecord: Record = {};
-        for (let field of Object.keys(record)) {
-          newRecord[field] = record[field].toString();
-        }
-        return newRecord;
-      });
-      const headers = [...Object.keys(newRecords[0])];
-      let newColumns = makeColumns(headers as string[]);
-      newColumns = autofitColumns(newColumns, newRecords);
-      setTableData(newColumns, newRecords);
-      addHistoryItem({
-        do: { columns: newColumns, records: newRecords },
-        undo: { columns, records },
-      });
-      return true;
+      return handleJsonRecords(jsonRecords);
     } catch (err) {
+      setWarning(true);
+      return false;
+    }
+  };
+
+  const importYAML = (yamlString: string) => {
+    try {
+      const yamlRecords = yaml.load(yamlString.trim());
+      return handleJsonRecords(yamlRecords);
+    } catch {
       setWarning(true);
       return false;
     }
@@ -624,6 +668,11 @@ function App() {
     // link.download = "export.json";
     // link.click();
   };
+
+  const exportYAML = () => {
+    const yamlString = yaml.dump(records);
+    exportContent(yamlString);
+  }
 
   const exportMD = () => {
     let safeAlign: AlignType[] | "" = "";
@@ -898,7 +947,7 @@ function App() {
       const { rowId } = selectedRanges[0][0];
       if (typeof rowId === "number") {
         const content = records[rowId][selectedRanges[0][0].columnId];
-        if (!content.includes("\n")) {
+        if (typeof content === "string" && !content.includes("\n")) {
           multilineOptions = [
             {
               id: "convertCellToMultiline",
@@ -929,6 +978,11 @@ function App() {
         id: "exportJSON",
         label: "Insert Table as JSON",
         handler: exportJSON,
+      },
+      {
+        id: "exportYAML",
+        label: "Insert Table as YAML",
+        handler: exportYAML,
       },
       {
         id: "autofitColumns",
@@ -1223,6 +1277,8 @@ function App() {
         onCellsChanged={handleChanges}
         onColumnResized={handleColumnResize}
         onColumnsReordered={handleColumnsReorder}
+        onRowsReordered={handleRowsReorder}
+        canReorderRows={handleCanReorderRows}
         enableRowSelection
         enableColumnSelection
         enableRangeSelection
@@ -1232,6 +1288,7 @@ function App() {
         customCellTemplates={{
           text: new TextCellTemplate(),
           columnHeader: new ColumnHeaderCellTemplate(),
+          rowHeader: new RowHeaderCellTemplate(),
         }}
       />
     </div>

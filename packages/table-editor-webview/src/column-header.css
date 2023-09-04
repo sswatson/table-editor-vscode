@@ -1,4 +1,4 @@
-.rg-columnHeader-cell {
+.rg-columnHeader-cell, .rg-rowHeader-cell {
   background-color: var(--darker-bg-color);
   background-opacity: 1;
   display: flex;
