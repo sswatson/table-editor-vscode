@@ -77,3 +77,7 @@ export function adjustMenuPosition() {
     menu.style.top = '0px';
   }
 }
+
+export function sorted(list: number[]) {
+  return list.slice().sort((a, b) => a - b);
+}

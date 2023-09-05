@@ -33,6 +33,7 @@ import {
   adjustMenuPosition,
   cmd,
   smartCompare,
+  sorted,
   TextWidthMeasurer,
 } from "./utils";
 import CodeDialog from "./CodeDialog";
@@ -385,7 +386,7 @@ function App() {
       ...records
         .slice(0, insertionPosition)
         .filter((_, idx) => !rowIds.includes(idx)),
-      ...rowIds
+      ...sorted(rowIds as number[])
         .map((rowId) => records[rowId as number]),
       ...records
         .slice(insertionPosition)
