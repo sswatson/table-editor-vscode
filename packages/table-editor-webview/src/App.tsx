@@ -680,11 +680,12 @@ function App() {
     if (align && align.length === columns.length - 1) {
       safeAlign = align;
     }
+    const actualColumns = columns.slice(1);
     const md = markdownTable(
       [
-        columns.slice(1).map((c) => c.columnId.toString()),
+        actualColumns.map((c) => c.columnId.toString()),
         ...records.map((record) => {
-          return [...Object.values(record)].map((x) => x.toString());
+          return actualColumns.map((c) => record[c.columnId].toString());
         }),
       ],
       { align: safeAlign }
