@@ -20,6 +20,12 @@ To package the extension as a VSIX file to be installed in VS Code, do
 pnpm package
 ```
 
+To publish, do:
+
+```
+pnpm publish
+```
+
 ## Installation
 
 Search for "Table Editor" in the VS Code Extension Marketplace.
