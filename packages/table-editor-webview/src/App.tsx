@@ -4,7 +4,6 @@ import {
   Column,
   Row,
   CellChange,
-  HeaderCell,
   TextCell,
   Id,
   Cell,
@@ -523,7 +522,7 @@ function App() {
     const newRecords = jsonRecords.map((record) => {
       const newRecord: Record = {};
       for (let field of Object.keys(record)) {
-        newRecord[field] = record[field].toString();
+        newRecord[field] = `${record[field]}`;
       }
       return newRecord;
     });
@@ -660,7 +659,14 @@ function App() {
   };
 
   const exportJSON = () => {
-    const json = JSON.stringify(records, null, 2);
+    const convertedRecords = records.map((record) => {
+      const newRecord: Record = {};
+      for (let key in record) {
+        newRecord[key] = fromString(record[key]);
+      }
+      return newRecord;
+    });
+    const json = JSON.stringify(convertedRecords, null, 2);
     exportContent(json);
     // const blob = new Blob([json], {type: "application/json"});
     // const url = URL.createObjectURL(blob);
@@ -1132,6 +1138,7 @@ function App() {
     if (s === undefined) return undefined;
     if (typeof s === "number") return s;
     if (Array.isArray(s)) return s.map(fromString);
+    if (s === "null") return null;
     if (typeof s === "object") {
       const obj: { [key: string]: any } = {};
       for (const key in s) {
