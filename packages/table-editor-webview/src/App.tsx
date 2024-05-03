@@ -938,6 +938,32 @@ function App() {
     setTableData(newColumns, newRecords);
   };
 
+  async function expandAndPaste(selectedRanges: CellLocation[][], pasteHandler: any) {
+    const pastedText = await navigator.clipboard.readText();
+    const pastedRows = pastedText
+      .split("\n")
+      .map((line: string) =>
+        line
+          .split("\t")
+          .map((t) => ({ type: "text", text: t, value: parseFloat(t) }))
+    );
+    const [[{ columnId, rowId }]] = selectedRanges;
+    const colIdx = columns.findIndex((col) => col.columnId === columnId);
+    const rowIdx = rowId as number;
+    const numRows = pastedRows.length + rowIdx;
+    const numCols = pastedRows.reduce(
+      (max, row) => Math.max(max, row.length),
+      0
+    ) + colIdx;
+    if (numCols > columns.length) {
+      addColumns(columns.length, numCols - columns.length);
+    }
+    if (numRows > records.length) {
+      addRows(records.length, numRows - records.length);
+    }
+    pasteHandler();
+  }
+
   const simpleHandleContextMenu = (
     selectedRowIds: Id[],
     selectedColIds: Id[],
@@ -946,6 +972,8 @@ function App() {
     selectedRanges: CellLocation[][]
   ): MenuOption[] => {
     let multilineOptions: MenuOption[] = [];
+    // @ts-ignore
+    const { handler: pasteHandler } = menuOptions.find((x) => x.id === "paste");
     if (
       selectionMode === "range" &&
       selectedRanges.length === 1 &&
@@ -991,6 +1019,11 @@ function App() {
         id: "exportYAML",
         label: "Insert Table as YAML",
         handler: exportYAML,
+      },
+      {
+        id: "expandAndPaste",
+        label: "Expand and Paste",
+        handler: () => expandAndPaste(selectedRanges, pasteHandler),
       },
       {
         id: "autofitColumns",
