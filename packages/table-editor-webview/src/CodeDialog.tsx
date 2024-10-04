@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { TransformMode } from "./App";
 
 interface CodeDialogProps {
   codeRequested: string;
@@ -9,6 +10,7 @@ interface CodeDialogProps {
   codeHistoryIndex: number;
   setCodeHistoryIndex: (codeHistoryIndex: number) => void;
   submitCode: () => void;
+  transformMode: TransformMode;
 }
 
 const CodeDialog = (props: CodeDialogProps) => {
@@ -21,6 +23,7 @@ const CodeDialog = (props: CodeDialogProps) => {
     setCodeHistoryIndex,
     submitCode,
     setCodeRequested,
+    transformMode,
   } = props;
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -41,11 +44,28 @@ const CodeDialog = (props: CodeDialogProps) => {
       <div className="text-[0.65rem]">
         Variables:
         <ul className="ml-4 mt-1">
-          <li><code>cell</code>: the value in the current cell</li>
-          <li><code>row</code>: the value of the row, as an object keyed by the column headers</li>
-          <li><code>table</code>: the whole table, as a list of row objects</li>
-          <li><code>index</code>: the row index of the current cell, starting from 0</li>
-          <li><code>previous</code>: the value of the cell above, <code>undefined</code> if row 1</li>
+          {transformMode === "transformColumn" && (
+            <li>
+              <code>cell</code>: the value in the current cell
+            </li>
+          )}
+          <li>
+            <code>row</code>: the value of the row, as an object keyed by the
+            column headers
+          </li>
+          <li>
+            <code>table</code>: the whole table, as a list of row objects
+          </li>
+          <li>
+            <code>index</code>: the row index of the current cell, starting from
+            0
+          </li>
+          {transformMode === "transformColumn" && (
+            <li>
+              <code>previous</code>: the value of the cell above,{" "}
+              <code>undefined</code> if row 1
+            </li>
+          )}
         </ul>
       </div>
       <textarea

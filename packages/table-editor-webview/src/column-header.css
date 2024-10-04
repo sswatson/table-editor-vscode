@@ -1,6 +1,6 @@
 .rg-columnHeader-cell, .rg-rowHeader-cell {
   background-color: var(--darker-bg-color);
-  background-opacity: 1;
+  opacity: 1;
   display: flex;
   justify-content: center;
   align-items: center;

@@ -10,7 +10,7 @@
   justify-content: center;
   align-items: center;
   background-color: var(--darker-bg-color) !important;
-  background-opacity: 1!important;
+  opacity: 1!important;
 }
 
 .rg-cell {
@@ -29,6 +29,10 @@
 
 .reactgrid-content .rg-pane.rg-pane-top, .reactgrid-content .rg-pane.rg-pane-bottom, .reactgrid-content .rg-pane.rg-pane-left, .reactgrid-content .rg-pane.rg-pane-right {
   background-color: unset;
+}
+
+.rg-pane.rg-pane-top {
+  z-index: 1;
 }
 
 .reactgrid-content .rg-context-menu .rg-context-menu-option {

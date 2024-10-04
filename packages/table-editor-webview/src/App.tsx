@@ -284,6 +284,8 @@ function withColumnsRemoved(
   };
 }
 
+export type TransformMode = "transformColumn" | "filterRows";
+
 function App() {
   const [records, setRecords] = React.useState<Record[]>([]);
   const [columns, setColumns] = React.useState<Column[]>([]);
@@ -293,6 +295,8 @@ function App() {
   const [numRequest, setNumRequest] = React.useState("");
   const [dialogNumber, setDialogNumber] = React.useState("");
   const [dialogPurpose, setDialogPurpose] = React.useState("");
+  const [transformMode, setTransformMode] =
+    React.useState<TransformMode>("transformColumn");
   const [insertionIndex, setInsertionIndex] = React.useState(0);
   const [code, setCode] = React.useState("");
   const [selectedColIds, setSelectedColIds] = React.useState<Id[]>([]);
@@ -377,16 +381,20 @@ function App() {
     setColumns((prevColumns) => reorderArray(prevColumns, columnIdxs, to));
   };
 
-  const handleRowsReorder = (targetRowId: Id, rowIds: Id[], dropPosition: DropPosition) => {
+  const handleRowsReorder = (
+    targetRowId: Id,
+    rowIds: Id[],
+    dropPosition: DropPosition
+  ) => {
     if (typeof targetRowId !== "number") return;
     const newColumns = [...columns];
-    const insertionPosition = dropPosition === "after" ? targetRowId + 1 : targetRowId;
+    const insertionPosition =
+      dropPosition === "after" ? targetRowId + 1 : targetRowId;
     const newRecords = [
       ...records
         .slice(0, insertionPosition)
         .filter((_, idx) => !rowIds.includes(idx)),
-      ...sorted(rowIds as number[])
-        .map((rowId) => records[rowId as number]),
+      ...sorted(rowIds as number[]).map((rowId) => records[rowId as number]),
       ...records
         .slice(insertionPosition)
         .filter((_, idx) => !rowIds.includes(idx + insertionPosition)),
@@ -399,8 +407,8 @@ function App() {
   };
 
   const handleCanReorderRows = (targetRowId: Id): boolean => {
-    return targetRowId !== 'header';
-  }
+    return targetRowId !== "header";
+  };
 
   const handleColumnResize = (ci: Id, width: number) => {
     setColumns((prevColumns) => {
@@ -444,7 +452,13 @@ function App() {
   }
 
   const importUnknown = (data: string) => {
-    for (let importFormat of [importJSON, importYAML, importHTML, importMD, importCSV]) {
+    for (let importFormat of [
+      importJSON,
+      importYAML,
+      importHTML,
+      importMD,
+      importCSV,
+    ]) {
       const result = importFormat(data);
       if (result !== false) return;
     }
@@ -679,7 +693,7 @@ function App() {
   const exportYAML = () => {
     const yamlString = yaml.dump(records);
     exportContent(yamlString);
-  }
+  };
 
   const exportMD = () => {
     let safeAlign: AlignType[] | "" = "";
@@ -938,7 +952,10 @@ function App() {
     setTableData(newColumns, newRecords);
   };
 
-  async function expandAndPaste(selectedRanges: CellLocation[][], pasteHandler: any) {
+  async function expandAndPaste(
+    selectedRanges: CellLocation[][],
+    pasteHandler: any
+  ) {
     const pastedText = await navigator.clipboard.readText();
     const pastedRows = pastedText
       .split("\n")
@@ -946,15 +963,13 @@ function App() {
         line
           .split("\t")
           .map((t) => ({ type: "text", text: t, value: parseFloat(t) }))
-    );
+      );
     const [[{ columnId, rowId }]] = selectedRanges;
     const colIdx = columns.findIndex((col) => col.columnId === columnId);
     const rowIdx = rowId as number;
     const numRows = pastedRows.length + rowIdx;
-    const numCols = pastedRows.reduce(
-      (max, row) => Math.max(max, row.length),
-      0
-    ) + colIdx;
+    const numCols =
+      pastedRows.reduce((max, row) => Math.max(max, row.length), 0) + colIdx;
     if (numCols > columns.length) {
       addColumns(columns.length, numCols - columns.length);
     }
@@ -978,7 +993,8 @@ function App() {
       selectionMode === "range" &&
       selectedRanges.length === 1 &&
       selectedRanges[0].length === 1 &&
-      selectedRanges[0][0].rowId !== "header" && "_row_number"
+      selectedRanges[0][0].rowId !== "header" &&
+      "_row_number"
     ) {
       const { rowId } = selectedRanges[0][0];
       if (typeof rowId === "number") {
@@ -993,7 +1009,7 @@ function App() {
           ];
         }
       }
-    };
+    }
     menuOptions = [
       {
         id: "exportCSV",
@@ -1061,6 +1077,14 @@ function App() {
             label: `Delete Row${selectedRowIds.length === 1 ? "" : "s"}`,
             handler: () => removeRow(selectedRowIds as number[]),
           },
+          {
+            id: "filterRows",
+            label: "Filter Rows",
+            handler: () => {
+              setCodeRequested("Enter an expression to filter rows:");
+              setTransformMode("filterRows");
+            },
+          },
           ...menuOptions,
         ];
       }
@@ -1121,15 +1145,45 @@ function App() {
               }.`
             );
             setSelectedColIds(selectedColIds);
+            setTransformMode("transformColumn");
           },
         },
         {
-          id: "sortColumn",
-          label: `Sort on Column${selectedColIds.length === 1 ? "" : "s"}`,
+          id: "sortColumnAsc",
+          label: "Sort Ascending",
           handler: () => {
             const newRecords = [...records].sort((record1, record2) => {
               for (let colId of selectedColIds) {
                 const comparison = smartCompare(record1[colId], record2[colId]);
+                if (comparison !== 0) {
+                  return comparison;
+                }
+              }
+              return 0;
+            });
+            addHistoryItem({
+              do: {
+                records: newRecords,
+                columns: columns,
+              },
+              undo: {
+                records,
+                columns,
+              },
+            });
+            setRecords(newRecords);
+          },
+        },
+        {
+          id: "sortColumnDesc",
+          label: "Sort Descending",
+          handler: () => {
+            const newRecords = [...records].sort((record1, record2) => {
+              for (let colId of selectedColIds) {
+                const comparison = -smartCompare(
+                  record1[colId],
+                  record2[colId]
+                );
                 if (comparison !== 0) {
                   return comparison;
                 }
@@ -1187,53 +1241,86 @@ function App() {
 
   function submitCode() {
     try {
-      const newRecordFields: { [key: string]: string }[] = [];
       setCodeHistory((hist) => [...hist, code].slice(-MAX_HISTORY));
       setCodeHistoryIndex(codeHistory.length);
-      const f = functionWithUtilsFromString(
-        ["cell", "row", "index", "table", "previous"],
-        code,
-        preamble
-      ) as any;
-      for (let i = 0; i < records.length; i++) {
-        newRecordFields.push({});
-        const record = records[i];
-        for (let j = 0; j < selectedColIds.length; j++) {
-          const colId = selectedColIds[j];
-          newRecordFields[i][colId] = stringify(
-            f(
-              ...[
-                record[colId], // cell
-                record, // row
-                i, // index
-                records, // table
-                i > 0 // previous
-                  ? newRecordFields[i - 1][colId]
-                  : undefined,
-              ].map(fromString)
-            )
-          );
+      if (transformMode === "transformColumn") {
+        const newRecordFields: { [key: string]: string }[] = [];
+        const f = functionWithUtilsFromString(
+          ["cell", "row", "index", "table", "previous"],
+          code,
+          preamble
+        ) as any;
+        for (let i = 0; i < records.length; i++) {
+          newRecordFields.push({});
+          const record = records[i];
+          for (let j = 0; j < selectedColIds.length; j++) {
+            const colId = selectedColIds[j];
+            newRecordFields[i][colId] = stringify(
+              f(
+                ...[
+                  record[colId], // cell
+                  record, // row
+                  i, // index
+                  records, // table
+                  i > 0 // previous
+                    ? newRecordFields[i - 1][colId]
+                    : undefined,
+                ].map(fromString)
+              )
+            );
+          }
         }
-      }
-      addHistoryItem({
-        do: {
-          records: records.map((record, j) => ({
+        addHistoryItem({
+          do: {
+            records: records.map((record, j) => ({
+              ...record,
+              ...newRecordFields[j],
+            })),
+            columns: columns,
+          },
+          undo: {
+            records,
+            columns,
+          },
+        });
+        setRecords((records) => {
+          return records.map((record, j) => ({
             ...record,
             ...newRecordFields[j],
-          })),
-          columns: columns,
-        },
-        undo: {
-          records,
-          columns,
-        },
-      });
-      setRecords((records) => {
-        return records.map((record, j) => ({
-          ...record,
-          ...newRecordFields[j],
-        }));
-      });
+          }));
+        });
+      } else if (transformMode === "filterRows") {
+        const f = functionWithUtilsFromString(
+          ["row", "index", "table"],
+          code,
+          preamble
+        ) as any;
+        const newRecords: { [key: string]: string }[] = [];
+        for (let i = 0; i < records.length; i++) {
+          const record = records[i];
+          const shouldKeep = f(
+            ...[
+              record, // row
+              i, // index
+              records, // table
+            ].map(fromString)
+          );
+          if (shouldKeep) {
+            newRecords.push(record);
+          }
+        }
+        addHistoryItem({
+          do: {
+            records: newRecords,
+            columns: columns,
+          },
+          undo: {
+            records,
+            columns,
+          },
+        });
+        setRecords(newRecords);
+      }
       setCodeRequested("");
     } catch (e) {
       setCodeRequested("Error: " + e);
@@ -1300,6 +1387,7 @@ function App() {
               codeHistoryIndex={codeHistoryIndex}
               setCodeHistoryIndex={setCodeHistoryIndex}
               submitCode={submitCode}
+              transformMode={transformMode}
             />
           ) : null}
           {numRequest ? (
