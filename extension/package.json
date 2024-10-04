@@ -3,7 +3,7 @@
 	"displayName": "Table Editor",
 	"publisher": "sswatson",
 	"description": "A spreadsheet-style editor for CSV, JSON, and Markdown tables.",
-	"version": "0.3.15",
+	"version": "0.3.16",
 	"icon": "assets/table-editor.png",
 	"engines": {
 		"vscode": "^1.81.0"
@@ -58,7 +58,8 @@
 		"watch": "tsc -watch -p ./",
 		"pretest": "pnpm compile && pnpm lint",
 		"lint": "eslint src --ext ts",
-		"test": "node ./out/test/runTest.js"
+		"test": "node ./out/test/runTest.js",
+		"login": "vsce login sswatson"
 	},
 	"dependencies": {
 		"markdown-table": "^3.0.3",
