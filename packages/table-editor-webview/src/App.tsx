@@ -1226,6 +1226,8 @@ function App() {
     if (typeof s === "number") return s;
     if (Array.isArray(s)) return s.map(fromString);
     if (s === "null") return null;
+    if (s === "false") return false;
+    if (s === "true") return true;
     if (typeof s === "object") {
       const obj: { [key: string]: any } = {};
       for (const key in s) {
